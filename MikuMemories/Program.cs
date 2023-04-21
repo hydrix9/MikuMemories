@@ -5,6 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Python.Runtime;
+using System.IO;
+using static MikuMemories.PythonInterop;
 
 namespace MikuMemories
 {
@@ -15,6 +18,21 @@ namespace MikuMemories
             new Config(); //create instance
             new Mongo(); //create instance
             new LlmApi(); //create instance
+
+            string pythonPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Python");
+            string pythonLibPath = Path.Combine(pythonPath, "Lib");
+
+            Environment.SetEnvironmentVariable("PATH", $"{pythonPath};{Environment.GetEnvironmentVariable("PATH")}");
+            Environment.SetEnvironmentVariable("PYTHONHOME", pythonPath);
+            Environment.SetEnvironmentVariable("PYTHONPATH", pythonLibPath);
+
+            // Initialize the Python runtime
+            PythonEngine.Initialize();
+
+            // Register event handlers for application exit
+            AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
+            Console.CancelKeyPress += OnCancelKeyPress;
+
 
             /*
             var request = new LLmApiRequest(LlmInputParams.defaultParams);
@@ -47,6 +65,19 @@ namespace MikuMemories
 
         }
 
+        // Event handler for application exit
+        private static void OnProcessExit(object sender, EventArgs e)
+        {
+            PythonEngine.Shutdown();
+        }
+
+        // Event handler for keyboard interrupt (e.g., Ctrl+C)
+        private static void OnCancelKeyPress(object sender, ConsoleCancelEventArgs e)
+        {
+            PythonEngine.Shutdown();
+            Environment.Exit(0);
+        }
+
         public static IMongoCollection<Response> GetResponsesCollection()
         {
             // Replace the following with your own MongoDB connection details.
@@ -74,11 +105,33 @@ namespace MikuMemories
             await collection.InsertOneAsync(response);
         }
 
+        private static async Task<string> CompileRecentResponsesAsync(IMongoCollection<Response> responsesCollection, int n)
+        {
+            var recentResponses = await responsesCollection.Find(_ => true)
+                .Sort("{Timestamp: -1}")
+                .Limit(n)
+                .ToListAsync();
+
+            recentResponses.Reverse();
+
+            StringBuilder contextBuilder = new StringBuilder();
+
+            foreach (var response in recentResponses)
+            {
+                contextBuilder.AppendLine($"{response.UserName}: {response.Text}");
+            }
+
+            return contextBuilder.ToString();
+        }
+
+
+
         static async Task ProcessUserInput(string userName, int responseLimit)
         {
             // Get responses collection and recent responses.
             var responsesCollection = GetResponsesCollection();
-            List<Response> recentResponses = await GetRecentResponsesAsync(responsesCollection, responseLimit);
+            string recentResponses = await CompileRecentResponsesAsync(responsesCollection, int.Parse(Config.GetValue("numRecentResponses")));
+
 
             // Get user input and append it to recentResponses.
             Console.Write($"{userName}: ");
