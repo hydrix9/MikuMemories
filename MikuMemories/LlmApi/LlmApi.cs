@@ -18,7 +18,7 @@ namespace MikuMemories
 
         List<LLmApiRequest> requestQueue = new List<LLmApiRequest>();
 
-        public static async Task<string> QueueRequest(List<Response> chatResponses, LLmApiRequest request)
+        public static void QueueRequest(List<Response> chatResponses, LLmApiRequest request)
         {
             // Convert the chatResponses to a chat context string.
             StringBuilder chatContext = new StringBuilder();
