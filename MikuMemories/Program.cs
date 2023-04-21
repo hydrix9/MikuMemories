@@ -60,12 +60,12 @@ namespace MikuMemories
             return collection;
         }
 
-        private static List<Response> GetRecentResponses(IMongoCollection<Response> collection, int responseLimit)
+        private static async Task<List<Response>> GetRecentResponsesAsync(IMongoCollection<Response> collection, int responseLimit)
         {
-            return collection.Find(_ => true)
+            return await collection.Find(_ => true)
                 .SortByDescending(r => r.Timestamp)
                 .Limit(responseLimit)
-                .ToList();
+                .ToListAsync();
         }
 
         private static async Task InsertResponseAsync(IMongoCollection<Response> collection, Response response)
@@ -77,7 +77,7 @@ namespace MikuMemories
         {
             // Get responses collection and recent responses.
             var responsesCollection = GetResponsesCollection();
-            List<Response> recentResponses = GetRecentResponses(responsesCollection, responseLimit);
+            List<Response> recentResponses = await GetRecentResponsesAsync(responsesCollection, responseLimit);
 
             // Get user input and append it to recentResponses.
             Console.Write($"{userName}: ");
