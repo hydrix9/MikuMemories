@@ -68,9 +68,9 @@ namespace MikuMemories
                     var userCollection = Mongo.instance.GetUserCollection(sender, "responses");
 
                     // Insert the LLM's response into the database.
-                    await Program.InsertResponseAsync(Program.GetResponsesCollection(), res);
+                    await Program.InsertResponseAsync(Mongo.instance.GetResponsesCollection(sender), res);
 
-                    Program.TrySummarize();
+                    await Program.TrySummarize();
 
                     request.callback?.Invoke(response); //do whatever with response
 

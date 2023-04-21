@@ -12,7 +12,8 @@ namespace MikuMemories
 
         public static Mongo instance;
 
-        private readonly IMongoCollection<Response> _responses;
+        static readonly string responseCollectionSuffix = "_responses";
+        static readonly string summariesCollectionSuffix = "_summaries";
 
         private readonly IMongoClient _client;
 
@@ -24,15 +25,32 @@ namespace MikuMemories
 
         }
 
-        public IMongoCollection<Response> GetUserCollection(string username, string type)
+        public IMongoCollection<Response> GetUserCollection(string userName, string type)
         {
-            return _client.GetDatabase(username).GetCollection<Response>($"user_{type}");
+            return _client.GetDatabase(userName).GetCollection<Response>($"user_{type}");
         }
 
-        public void InsertResponse(Response response)
+        public void InsertResponse(string userName, Response response)
         {
-            _responses.InsertOne(response);
+            GetResponsesCollection(userName).InsertOne(response);
         }
+
+
+        public IMongoCollection<Response> GetResponsesCollection(string userName)
+        {
+
+            var database = _client.GetDatabase(userName);
+            var collection = database.GetCollection<Response>(userName + responseCollectionSuffix);
+            return collection;
+        }
+        public IMongoCollection<Summary> GetSummariesCollection(string username)
+        {
+
+            var database = _client.GetDatabase(username);
+            var collection = database.GetCollection<Summary>(username + summariesCollectionSuffix);
+            return collection;
+        }
+
 
     }
 

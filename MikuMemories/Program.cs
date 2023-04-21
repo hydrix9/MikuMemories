@@ -77,20 +77,6 @@ namespace MikuMemories
             Environment.Exit(0);
         }
 
-        public static IMongoCollection<Response> GetResponsesCollection()
-        {
-            // Replace the following with your own MongoDB connection details.
-            string connectionString = "mongodb+srv://<username>:<password>@cluster.mongodb.net/database_name?retryWrites=true&w=majority";
-            string databaseName = "your_database_name";
-            string collectionName = "responses";
-
-            var client = new MongoClient(connectionString);
-            var database = client.GetDatabase(databaseName);
-            var collection = database.GetCollection<Response>(collectionName);
-
-            return collection;
-        }
-
         public static async Task<List<Response>> GetRecentResponsesAsync(IMongoCollection<Response> collection, int responseLimit)
         {
             return await collection.Find(_ => true)
@@ -123,9 +109,9 @@ namespace MikuMemories
             return contextBuilder.ToString();
         }
 
-        public static string GetSummaries()
+        private static async Task<IEnumerable<Summary>> GetSummaries(string userName)
         {
-            return "";
+            return await Mongo.instance.GetSummariesCollection(userName).Find(_ => true).ToListAsync();
         }
 
         private static string CompileFullContext(string recentResponses, string summaries)
@@ -133,15 +119,49 @@ namespace MikuMemories
             return "";
         }
 
-        public static void TrySummarize()
+        public static async Task TrySummarize(string userName)
         {
+            int messageCount = (int)await Mongo.instance.GetResponsesCollection(userName).CountDocumentsAsync(FilterDefinition<Response>.Empty);
 
+            // Replace these values with your desired message count thresholds for different summary lengths
+            int shortSummaryThreshold = 10;
+            int mediumSummaryThreshold = 30;
+            int longSummaryThreshold = 100;
+
+            if (messageCount % shortSummaryThreshold == 0 || messageCount % mediumSummaryThreshold == 0 || messageCount % longSummaryThreshold == 0)
+            {
+                int summaryLength = 0;
+
+                if (messageCount % longSummaryThreshold == 0)
+                {
+                    summaryLength = 3; // Replace 3 with the desired summary length for the long summary
+                }
+                else if (messageCount % mediumSummaryThreshold == 0)
+                {
+                    summaryLength = 2; // Replace 2 with the desired summary length for the medium summary
+                }
+                else
+                {
+                    summaryLength = 1; // Replace 1 with the desired summary length for the short summary
+                }
+
+                string compiledResponses = await CompileRecentResponsesAsync(Mongo.instance.GetResponsesCollection(userName), int.Parse(Config.GetValue("numRecentResponses")));
+                string summaryText = PythonInterop.GenerateSummary(compiledResponses, summaryLength);
+
+                var summary = new Summary
+                {
+                    Text = summaryText,
+                    SummaryLength = summaryLength,
+                };
+
+                await Mongo.instance.GetSummariesCollection(userName).InsertOneAsync(summary);
+            }
         }
 
         static async Task ProcessUserInput(string userName, int responseLimit)
         {
             // Get responses collection and recent responses.
-            var responsesCollection = GetResponsesCollection();
+            var responsesCollection = Mongo.instance.GetResponsesCollection(userName);
 
             // Get user input and append it to recentResponses.
             Console.Write($"{userName}: ");
@@ -153,7 +173,7 @@ namespace MikuMemories
 
             string recentResponses = await CompileRecentResponsesAsync(responsesCollection, int.Parse(Config.GetValue("numRecentResponses")));
 
-            string summaries = GetSummaries();
+            string summaries = GetSummaries(userName);
 
             // Get the compiled responses.
             string fullContext = CompileFullContext(recentResponses, summaries);
