@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MongoDB.Driver;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -35,31 +36,72 @@ namespace MikuMemories
             // Print a welcome message to the user
             Console.WriteLine($"Welcome to the chat, {userName}!");
 
-            StringBuilder chatContext = new StringBuilder();
+            int responseLimit = 10;
+
             while (true)
             {
-                ProcessUserInput(userName, chatContext);
+                await ProcessUserInput(userName, responseLimit);
             }
 
             await Task.Run(LlmApi.instance.TryProcessQueue);
         }
 
-        static void ProcessUserInput(string userName, StringBuilder chatContext)
+        private static IMongoCollection<Response> GetResponsesCollection()
         {
+            // Replace the following with your own MongoDB connection details.
+            string connectionString = "mongodb+srv://<username>:<password>@cluster.mongodb.net/database_name?retryWrites=true&w=majority";
+            string databaseName = "your_database_name";
+            string collectionName = "responses";
+
+            var client = new MongoClient(connectionString);
+            var database = client.GetDatabase(databaseName);
+            var collection = database.GetCollection<Response>(collectionName);
+
+            return collection;
+        }
+
+        private static List<Response> GetRecentResponses(IMongoCollection<Response> collection, int responseLimit)
+        {
+            return collection.Find(_ => true)
+                .SortByDescending(r => r.Timestamp)
+                .Limit(responseLimit)
+                .ToList();
+        }
+
+        private static async Task InsertResponseAsync(IMongoCollection<Response> collection, Response response)
+        {
+            await collection.InsertOneAsync(response);
+        }
+
+        static async Task ProcessUserInput(string userName, int responseLimit)
+        {
+            // Get responses collection and recent responses.
+            var responsesCollection = GetResponsesCollection();
+            List<Response> recentResponses = GetRecentResponses(responsesCollection, responseLimit);
+
+            // Get user input and append it to recentResponses.
             Console.Write($"{userName}: ");
             string userInput = Console.ReadLine();
-            chatContext.AppendLine($"{userName}: {userInput}");
+            Response userResponse = new Response { UserName = userName, Text = userInput, Timestamp = System.DateTime.UtcNow };
+            recentResponses.Add(userResponse);
 
-            // Call the LLM API with the updated context.
-            LlmApi.QueueRequest(new LLmApiRequest(chatContext.ToString(), LlmInputParams.defaultParams, (string response) =>
-            {
-                // Append the LLM's response to the chat context.
-                chatContext.AppendLine($"LLM: {response}");
+            // Insert the user's response into the database.
+            await InsertResponseAsync(responsesCollection, userResponse);
 
-                // Print the LLM's response.
-                Console.WriteLine($"LLM: {response}");
-            }));
+            
+
+            string llmResponseText = await LlmApi.QueueRequest(recentResponses, new LLmApiRequest(newRequest, LlmInputParams.defaultParams));
+
+            // Create an LLM response object.
+            Response llmResponse = new Response { UserName = "LLM", Text = llmResponseText, Timestamp = System.DateTime.UtcNow };
+
+            // Print the LLM's response.
+            Console.WriteLine($"LLM: {llmResponseText}");
+
+            // Insert the LLM's response into the database.
+            await InsertResponseAsync(responsesCollection, llmResponse);
         }
+
 
     } //end class Main
 
