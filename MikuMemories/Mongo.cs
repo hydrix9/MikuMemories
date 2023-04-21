@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using MongoDB.Bson;
 using MongoDB.Driver;
 namespace MikuMemories
 {
@@ -41,5 +42,13 @@ namespace MikuMemories
         public string UserName { get; set; }
         public string Text { get; set; }
     }
+
+    public class Summary
+    {
+        public ObjectId Id { get; set; }
+        public string Text { get; set; }
+        public int SummaryLength { get; set; }
+    }
+
 
 }

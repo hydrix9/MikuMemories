@@ -18,14 +18,8 @@ namespace MikuMemories
 
         List<LLmApiRequest> requestQueue = new List<LLmApiRequest>();
 
-        public static void QueueRequest(List<Response> chatResponses, LLmApiRequest request)
+        public static void QueueRequest(LLmApiRequest request)
         {
-            // Convert the chatResponses to a chat context string.
-            StringBuilder chatContext = new StringBuilder();
-            foreach (var response in chatResponses)
-            {
-                chatContext.AppendLine($"{response.UserName}: {response.Text}");
-            }
 
             instance.requestQueue.Add(request);
         }
@@ -76,6 +70,7 @@ namespace MikuMemories
                     // Insert the LLM's response into the database.
                     await Program.InsertResponseAsync(Program.GetResponsesCollection(), res);
 
+                    Program.TrySummarize();
 
                     request.callback?.Invoke(response); //do whatever with response
 

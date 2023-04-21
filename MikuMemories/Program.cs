@@ -7,7 +7,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Python.Runtime;
 using System.IO;
-using static MikuMemories.PythonInterop;
 
 namespace MikuMemories
 {
@@ -124,33 +123,43 @@ namespace MikuMemories
             return contextBuilder.ToString();
         }
 
+        public static string GetSummaries()
+        {
+            return "";
+        }
 
+        private static string CompileFullContext(string recentResponses, string summaries)
+        {
+            return "";
+        }
+
+        public static void TrySummarize()
+        {
+
+        }
 
         static async Task ProcessUserInput(string userName, int responseLimit)
         {
             // Get responses collection and recent responses.
             var responsesCollection = GetResponsesCollection();
-            string recentResponses = await CompileRecentResponsesAsync(responsesCollection, int.Parse(Config.GetValue("numRecentResponses")));
-
 
             // Get user input and append it to recentResponses.
             Console.Write($"{userName}: ");
             string userInput = Console.ReadLine();
             Response userResponse = new Response { UserName = userName, Text = userInput, Timestamp = System.DateTime.UtcNow };
-            recentResponses.Add(userResponse);
 
-            // Insert the user's response into the database.
             await InsertResponseAsync(responsesCollection, userResponse);
+            
 
-            // Compile the recentResponses into a single string.
-            StringBuilder compiledResponses = new StringBuilder();
-            foreach (var response in recentResponses)
-            {
-                compiledResponses.AppendLine($"{response.UserName}: {response.Text}");
-            }
-            string newRequest = compiledResponses.ToString();
+            string recentResponses = await CompileRecentResponsesAsync(responsesCollection, int.Parse(Config.GetValue("numRecentResponses")));
 
-            LlmApi.QueueRequest(recentResponses, new LLmApiRequest(newRequest, LlmInputParams.defaultParams));
+            string summaries = GetSummaries();
+
+            // Get the compiled responses.
+            string fullContext = CompileFullContext(recentResponses, summaries);
+
+            ///add request to be sent later in a queue
+            LlmApi.QueueRequest(new LLmApiRequest(fullContext, LlmInputParams.defaultParams));
         }
 
 
