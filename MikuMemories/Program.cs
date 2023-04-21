@@ -88,18 +88,26 @@ namespace MikuMemories
             // Insert the user's response into the database.
             await InsertResponseAsync(responsesCollection, userResponse);
 
-            
+            // Compile the recentResponses into a single string.
+            StringBuilder compiledResponses = new StringBuilder();
+            foreach (var response in recentResponses)
+            {
+                compiledResponses.AppendLine($"{response.UserName}: {response.Text}");
+            }
+            string newRequest = compiledResponses.ToString();
 
-            string llmResponseText = await LlmApi.QueueRequest(recentResponses, new LLmApiRequest(newRequest, LlmInputParams.defaultParams));
+            LlmApi.QueueRequest(recentResponses, new LLmApiRequest(newRequest, LlmInputParams.defaultParams, (response) => {
 
-            // Create an LLM response object.
-            Response llmResponse = new Response { UserName = "LLM", Text = llmResponseText, Timestamp = System.DateTime.UtcNow };
+                // Create an LLM response object.
+                Response llmResponse = new Response { UserName = "LLM", Text = response, Timestamp = System.DateTime.UtcNow };
 
-            // Print the LLM's response.
-            Console.WriteLine($"LLM: {llmResponseText}");
+                // Print the LLM's response.
+                Console.WriteLine($"LLM: {response}");
 
-            // Insert the LLM's response into the database.
-            await InsertResponseAsync(responsesCollection, llmResponse);
+                // Insert the LLM's response into the database.
+                await InsertResponseAsync(responsesCollection, response);
+
+            }));
         }
 
 

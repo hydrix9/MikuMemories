@@ -66,7 +66,7 @@ namespace MikuMemories
                     var res = new Response
                     {
                         Timestamp = DateTime.UtcNow,
-                        Sender = sender,
+                        UserName = sender,
                         Text = text
                     };
 
