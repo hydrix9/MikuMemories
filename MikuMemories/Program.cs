@@ -38,15 +38,16 @@ namespace MikuMemories
 
             int responseLimit = 10;
 
+            await Task.Run(LlmApi.instance.TryProcessQueue);
+
             while (true)
             {
                 await ProcessUserInput(userName, responseLimit);
             }
 
-            await Task.Run(LlmApi.instance.TryProcessQueue);
         }
 
-        private static IMongoCollection<Response> GetResponsesCollection()
+        public static IMongoCollection<Response> GetResponsesCollection()
         {
             // Replace the following with your own MongoDB connection details.
             string connectionString = "mongodb+srv://<username>:<password>@cluster.mongodb.net/database_name?retryWrites=true&w=majority";
@@ -60,7 +61,7 @@ namespace MikuMemories
             return collection;
         }
 
-        private static async Task<List<Response>> GetRecentResponsesAsync(IMongoCollection<Response> collection, int responseLimit)
+        public static async Task<List<Response>> GetRecentResponsesAsync(IMongoCollection<Response> collection, int responseLimit)
         {
             return await collection.Find(_ => true)
                 .SortByDescending(r => r.Timestamp)
@@ -68,7 +69,7 @@ namespace MikuMemories
                 .ToListAsync();
         }
 
-        private static async Task InsertResponseAsync(IMongoCollection<Response> collection, Response response)
+        public static async Task InsertResponseAsync(IMongoCollection<Response> collection, Response response)
         {
             await collection.InsertOneAsync(response);
         }
@@ -96,18 +97,7 @@ namespace MikuMemories
             }
             string newRequest = compiledResponses.ToString();
 
-            LlmApi.QueueRequest(recentResponses, new LLmApiRequest(newRequest, LlmInputParams.defaultParams, (response) => {
-
-                // Create an LLM response object.
-                Response llmResponse = new Response { UserName = "LLM", Text = response, Timestamp = System.DateTime.UtcNow };
-
-                // Print the LLM's response.
-                Console.WriteLine($"LLM: {response}");
-
-                // Insert the LLM's response into the database.
-                await InsertResponseAsync(responsesCollection, response);
-
-            }));
+            LlmApi.QueueRequest(recentResponses, new LLmApiRequest(newRequest, LlmInputParams.defaultParams));
         }
 
 
