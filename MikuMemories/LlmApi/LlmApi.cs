@@ -24,25 +24,65 @@ namespace MikuMemories
         }
 
 
-        public void TryProcessQueue()
+        public async Task TryProcessQueue()
         {
-            if (requestQueue.Count <= 0)
-                return;
+            while (true)
+            {
+                if (requestQueue.Count > 0)
+                {
 
-            //take from bottom of stack and process
-            LLmApiRequest request = requestQueue[0];
-            requestQueue.Remove(request);
+                    //take from bottom of stack and process
+                    LLmApiRequest request = requestQueue[0];
+                    requestQueue.Remove(request);
 
-            string jsonResponse = RestApi.PostRequest(Config.GetValue("llmsrv"), request.AsString());
-            JObject parsedResponse = JObject.Parse(jsonResponse);
-            JArray data = (JArray)parsedResponse["data"];
-            string response = data[0].ToString();
+                    string jsonResponse = RestApi.PostRequest(Config.GetValue("llmsrv"), request.AsString());
+                    JObject parsedResponse = JObject.Parse(jsonResponse);
+                    JArray data = (JArray)parsedResponse["data"];
+                    string response = data[0].ToString();
 
-            Console.WriteLine(response);
+                    Console.WriteLine(response);
 
-            request.callback?.Invoke(response); //do whatever with response
+                    // Split the LLM response into lines and get the last non-empty line
+                    var lines = response.Split('\n').Select(x => x.Trim()).Where(x => !string.IsNullOrEmpty(x)).ToList();
+                    var lastLine = lines.LastOrDefault();
+                    if (!string.IsNullOrEmpty(lastLine))
+                    {
+                        // Determine the sender and userId based on the last line
+                        string sender, userId;
+                        if (lastLine.StartsWith("User:"))
+                        {
+                            sender = "User";
+                            userId = lastLine.Substring(sender.Length + 1).Trim().Split(' ')[0];
+                        }
+                        else
+                        {
+                            sender = "LLM";
+                            userId = "default"; // You can replace this with a specific user ID
+                        }
 
-        }
+                        // Remove the "User:" or "LLM:" part from the last line
+                        string text = lastLine.Substring(sender.Length + 1).Trim();
+
+                        var res = new Response
+                        {
+                            Timestamp = DateTime.UtcNow,
+                            Sender = sender,
+                            Text = text
+                        };
+
+                        // Get or create the user-specific collection and insert the response
+                        var userCollection = Mongo.instance.GetUserCollection(userId);
+                        userCollection.InsertOne(res);
+                    }
+
+                    request.callback?.Invoke(response); //do whatever with response
+
+                }
+
+                await Task.Delay(TimeSpan.FromSeconds(1));
+            } //end while
+        } //end func TryProcessQueue
+
 
     }
 }

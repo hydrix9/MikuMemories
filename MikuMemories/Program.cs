@@ -9,26 +9,30 @@ namespace MikuMemories
 {
     class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             new Config(); //create instance
             new Mongo(); //create instance
             new LlmApi(); //create instance
 
-
+            /*
             var request = new LLmApiRequest(LlmInputParams.defaultParams);
             request.prompt = "hello";
             request.@params.max_new_tokens = 5;
 
+            //test request
             Console.WriteLine(request.AsString());
-
             LlmApi.QueueRequest(request);
+            */
 
-            while(true)
-            {
-                LlmApi.instance.TryProcessQueue();
-                Thread.Sleep(10);
-            }
+            await Task.Run(LlmApi.instance.TryProcessQueue);
         }
+
+        private void ProcessUserInput(string userInput)
+        {
+
+        }
+
     }
+
 }
