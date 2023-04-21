@@ -21,8 +21,9 @@ namespace MikuMemories
         [JsonIgnore]
         public Callback<string> callback;
 
-        public LLmApiRequest(LlmInputParams @params, Callback<string> callback = null)
+        public LLmApiRequest(string prompt, LlmInputParams @params, Callback<string> callback = null)
         {
+            this.prompt = prompt;
             this.@params = @params;
             request_id = generateID();
             this.callback = callback;

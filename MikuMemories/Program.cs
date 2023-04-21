@@ -26,21 +26,41 @@ namespace MikuMemories
             */
 
             // Prompt the user to enter their name
+            Console.WriteLine("Welcome to MikuMemories!");
+
+            Console.WriteLine(" Enabling chat interface");
             Console.Write("Please enter your name: ");
             string userName = Console.ReadLine();
 
             // Print a welcome message to the user
             Console.WriteLine($"Welcome to the chat, {userName}!");
 
-            ProcessUserInput(userName);
+            StringBuilder chatContext = new StringBuilder();
+            while (true)
+            {
+                ProcessUserInput(userName, chatContext);
+            }
 
             await Task.Run(LlmApi.instance.TryProcessQueue);
         }
 
-        static void ProcessUserInput(string userName)
+        static void ProcessUserInput(string userName, StringBuilder chatContext)
         {
-  
+            Console.Write($"{userName}: ");
+            string userInput = Console.ReadLine();
+            chatContext.AppendLine($"{userName}: {userInput}");
+
+            // Call the LLM API with the updated context.
+            LlmApi.QueueRequest(new LLmApiRequest(chatContext.ToString(), LlmInputParams.defaultParams, (string response) =>
+            {
+                // Append the LLM's response to the chat context.
+                chatContext.AppendLine($"LLM: {response}");
+
+                // Print the LLM's response.
+                Console.WriteLine($"LLM: {response}");
+            }));
         }
-    }
+
+    } //end class Main
 
 }
