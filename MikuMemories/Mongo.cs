@@ -16,16 +16,16 @@ namespace MikuMemories
         private readonly IMongoClient _client;
 
         //constructor
-        public Mongo(string dbName)
+        public Mongo()
         {
             _client = new MongoClient(Config.GetValue("mongosrv"));
             instance = this; //set singleton instance
 
         }
 
-        public IMongoCollection<Response> GetUserCollection(string dbName, string userId)
+        public IMongoCollection<Response> GetUserCollection(string username, string type)
         {
-            return _client.GetDatabase(dbName).GetCollection<Response>($"user_{userId}");
+            return _client.GetDatabase(username).GetCollection<Response>($"user_{type}");
         }
 
         public void InsertResponse(Response response)

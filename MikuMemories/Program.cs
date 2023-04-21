@@ -25,14 +25,22 @@ namespace MikuMemories
             LlmApi.QueueRequest(request);
             */
 
+            // Prompt the user to enter their name
+            Console.Write("Please enter your name: ");
+            string userName = Console.ReadLine();
+
+            // Print a welcome message to the user
+            Console.WriteLine($"Welcome to the chat, {userName}!");
+
+            ProcessUserInput(userName);
+
             await Task.Run(LlmApi.instance.TryProcessQueue);
         }
 
-        private void ProcessUserInput(string userInput)
+        static void ProcessUserInput(string userName)
         {
-
+  
         }
-
     }
 
 }
