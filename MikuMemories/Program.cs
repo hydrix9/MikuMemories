@@ -116,7 +116,7 @@ namespace MikuMemories
 
         private static string CompileFullContext(string recentResponses, string summaries)
         {
-            return "";
+            return recentResponses + Environment.NewLine + summaries;
         }
 
         public static async Task TrySummarize(string userName)
@@ -173,7 +173,8 @@ namespace MikuMemories
 
             string recentResponses = await CompileRecentResponsesAsync(responsesCollection, int.Parse(Config.GetValue("numRecentResponses")));
 
-            string summaries = GetSummaries(userName);
+            IEnumerable<Summary> summariesRaw = await GetSummaries(userName);
+            string summaries = string.Join(Environment.NewLine, summariesRaw.Select(entry => entry.Text));
 
             // Get the compiled responses.
             string fullContext = CompileFullContext(recentResponses, summaries);
