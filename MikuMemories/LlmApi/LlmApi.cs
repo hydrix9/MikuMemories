@@ -70,7 +70,8 @@ namespace MikuMemories
                     // Insert the LLM's response into the database.
                     await Program.InsertResponseAsync(Mongo.instance.GetResponsesCollection(sender), res);
 
-                    await Program.TrySummarize();
+                    //create AI's viewpoint summary of the events
+                    await Program.TrySummarize(Config.GetValue("aiName"));
 
                     request.callback?.Invoke(response); //do whatever with response
 

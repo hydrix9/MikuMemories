@@ -121,6 +121,7 @@ namespace MikuMemories
 
         public static async Task TrySummarize(string userName)
         {
+
             int messageCount = (int)await Mongo.instance.GetResponsesCollection(userName).CountDocumentsAsync(FilterDefinition<Response>.Empty);
 
             // Replace these values with your desired message count thresholds for different summary lengths

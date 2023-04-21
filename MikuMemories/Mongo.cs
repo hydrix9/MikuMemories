@@ -12,8 +12,8 @@ namespace MikuMemories
 
         public static Mongo instance;
 
-        static readonly string responseCollectionSuffix = "_responses";
-        static readonly string summariesCollectionSuffix = "_summaries";
+        static readonly string responseCollection = "responses";
+        static readonly string summariesCollection = "summaries";
 
         private readonly IMongoClient _client;
 
@@ -40,15 +40,47 @@ namespace MikuMemories
         {
 
             var database = _client.GetDatabase(userName);
-            var collection = database.GetCollection<Response>(userName + responseCollectionSuffix);
+            var collection = database.GetCollection<Response>(responseCollection);
             return collection;
         }
         public IMongoCollection<Summary> GetSummariesCollection(string username)
         {
 
             var database = _client.GetDatabase(username);
-            var collection = database.GetCollection<Summary>(username + summariesCollectionSuffix);
+            var collection = database.GetCollection<Summary>(summariesCollection);
             return collection;
+        }
+
+        public async Task<List<IMongoCollection<BsonDocument>>> GetCharacterResponseCollections()
+        {
+            var databaseNamesCursor = await _client.ListDatabaseNamesAsync();
+            var databaseNames = await databaseNamesCursor.ToListAsync();
+            var characterDatabases = databaseNames.Where(dbName => dbName.StartsWith("user_"));
+
+            var characterResponseCollections = new List<IMongoCollection<BsonDocument>>();
+
+            foreach (var dbName in characterDatabases)
+            {
+                var database = _client.GetDatabase(dbName);
+                var collectionExists = await CollectionExists(database, responseCollection);
+
+                if (collectionExists)
+                {
+                    var collection = database.GetCollection<BsonDocument>(responseCollection);
+                    characterResponseCollections.Add(collection);
+                }
+            }
+
+            return characterResponseCollections;
+        }
+
+        private async Task<bool> CollectionExists(IMongoDatabase database, string collectionName)
+        {
+            var filter = new BsonDocument("name", collectionName);
+            var options = new ListCollectionsOptions { Filter = filter };
+
+            var collections = await database.ListCollectionsAsync(options);
+            return await collections.AnyAsync();
         }
 
 
