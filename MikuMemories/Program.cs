@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Python.Runtime;
 using System.IO;
+using MongoDB.Bson.Serialization;
 
 namespace MikuMemories
 {
@@ -121,8 +122,22 @@ namespace MikuMemories
 
         public static async Task TrySummarize(string userName)
         {
+            var characterResponseCollections = await Mongo.instance.GetCharacterResponseCollections();
+            var allResponses = new List<Response>();
 
-            int messageCount = (int)await Mongo.instance.GetResponsesCollection(userName).CountDocumentsAsync(FilterDefinition<Response>.Empty);
+            foreach (var collection in characterResponseCollections)
+            {
+                var responses = await collection.Find(_ => true).ToListAsync();
+                allResponses.AddRange(responses.Select(responseBson => BsonSerializer.Deserialize<Response>(responseBson)));
+            }
+
+            int messageCount = allResponses.Count;
+
+            if (messageCount == 0)
+            {
+                Console.WriteLine("No responses found.");
+                return;
+            }
 
             // Replace these values with your desired message count thresholds for different summary lengths
             int shortSummaryThreshold = 10;
