@@ -191,50 +191,11 @@ namespace MikuMemories
                 Console.WriteLine("No responses found.");
                 return;
             }
-
-            // Replace these values with your desired message count thresholds for different summary lengths
-            int shortSummaryThreshold = 10;
-            int mediumSummaryThreshold = 30;
-            int longSummaryThreshold = 100;
-
-            if (messageCount % shortSummaryThreshold == 0 || messageCount % mediumSummaryThreshold == 0 || messageCount % longSummaryThreshold == 0)
-            {
-                int summaryLength = 0;
-
-                if (messageCount % longSummaryThreshold == 0)
-                {
-                    summaryLength = 3; // Replace 3 with the desired summary length for the long summary
-                }
-                else if (messageCount % mediumSummaryThreshold == 0)
-                {
-                    summaryLength = 2; // Replace 2 with the desired summary length for the medium summary
-                }
-                else
-                {
-                    summaryLength = 1; // Replace 1 with the desired summary length for the short summary
-                }
-
-                //string compiledResponses = await CompileRecentResponsesAsync(Mongo.instance.GetResponsesCollection(userName), int.Parse(Config.GetValue("numRecentResponses")));
-
-                string compiledText = string.Join(Environment.NewLine, allResponses.Select(r => $"{r.UserName}: {r.Text}"));
-
-                DateTime currentDate = DateTime.UtcNow;
-                TimeSpan timePeriod = TimeSpan.FromDays(7);
-                DateTime endDate = currentDate + timePeriod;
+            
 
 
-                var summary = new Summary
-                {
-                    Text = compiledText,
-                    SummaryLength = summaryLength,
-                    StartDate = currentDate,
-                    EndDate = endDate
-                };
-
-
-
-                await Mongo.instance.GetSummariesCollection(characterName).InsertOneAsync(summary);
-            }
+            //await Mongo.instance.GetSummariesCollection(characterName).InsertOneAsync(summary);
+            
         }
 
 
