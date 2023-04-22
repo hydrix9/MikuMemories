@@ -80,7 +80,7 @@ namespace MikuMemories
 
             //TODO: test summarization
 
-            string initialContext = GenerateInitialContext(characterCard, userName);
+            string startingContext = GenerateContext(characterCard, true);
 
             while (true)
             {
@@ -199,13 +199,25 @@ namespace MikuMemories
             }
         }
 
-        private static string GenerateInitialContext(CharacterCard character, string userName)
+
+        //startConversation will include the world scenario and character greeting
+        public static string GenerateContext(CharacterCard characterCard, bool startConversation = true)
         {
-            string initialContext = character.char_persona + "\n";
-            initialContext += character.world_scenario.Replace("{{char}}", character.char_name).Replace("{{user}}", userName) + "\n";
-            initialContext += character.char_greeting;
-            return initialContext;
+            StringBuilder contextBuilder = new StringBuilder();
+
+            contextBuilder.AppendLine($"Name: {characterCard.name}");
+            contextBuilder.AppendLine($"Personality: {characterCard.personality}");
+            contextBuilder.AppendLine($"Description: {characterCard.description}");
+
+            if (startConversation)
+            {
+                contextBuilder.AppendLine($"World Scenario: {characterCard.world_scenario}");
+                contextBuilder.AppendLine($"Character Greeting: {characterCard.char_greeting}");
+            }
+
+            return contextBuilder.ToString();
         }
+
 
         static async Task ProcessUserInput(string userName)
         {
