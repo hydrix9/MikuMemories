@@ -25,6 +25,24 @@ namespace MikuMemories
 
         }
 
+        public async Task<List<IMongoDatabase>> GetUserDatabases()
+        {
+            var databasesCursor = await _client.ListDatabasesAsync();
+            var databasesList = await databasesCursor.ToListAsync();
+            var userDatabases = new List<IMongoDatabase>();
+
+            foreach (var database in databasesList)
+            {
+                string databaseName = database["name"].AsString;
+                if (databaseName.StartsWith("user_"))
+                {
+                    userDatabases.Add(_client.GetDatabase(databaseName));
+                }
+            }
+
+            return userDatabases;
+        }
+
         public IMongoCollection<Response> GetUserCollection(string userName, string type)
         {
             return _client.GetDatabase(userName).GetCollection<Response>($"user_{type}");
@@ -83,8 +101,54 @@ namespace MikuMemories
             return await collections.AnyAsync();
         }
 
+        public async Task<List<string>> GetLatestMessages(string characterName, int count)
+        {
+            var database = _client.GetDatabase(characterName);
+            var collection = database.GetCollection<BsonDocument>(responseCollection);
+            var messages = await collection.Find(new BsonDocument())
+                                           .SortByDescending(m => m["timestamp"])
+                                           .Limit(count)
+                                           .ToListAsync();
 
-    }
+            return messages.Select(m => m["text"].AsString).ToList();
+        }
+
+        //used to get the summary that uses a length called length, it is then combined with all the other latest summaries to form the context
+        public async Task<Summary> GetLatestSummary(string characterName, int length)
+        {
+            var collection = GetSummariesCollection(characterName);
+            var filter = Builders<Summary>.Filter.Eq("SummaryLength", length);
+            var latestSummaryBson = await collection.Find(filter).SortByDescending(s => s.Timestamp).FirstOrDefaultAsync();
+
+            if (latestSummaryBson != null)
+            {
+                return latestSummaryBson;
+            }
+            return null;
+        }
+
+
+        public async Task<List<Response>> GetLatestMessagesFromUserResponses(int count)
+        {
+            var userDatabases = await GetUserDatabases();
+            var allMessages = new List<Response>();
+
+            foreach (var database in userDatabases)
+            {
+                var collection = database.GetCollection<Response>("responses");
+                var messages = await collection.Find(new BsonDocument())
+                                               .SortByDescending(m => m.Timestamp)
+                                               .Limit(count)
+                                               .ToListAsync();
+                allMessages.AddRange(messages);
+            }
+
+            allMessages = allMessages.OrderByDescending(m => m.Timestamp).Take(count).ToList();
+            //return allMessages.Select(m => m.Text).ToList();
+            return allMessages;
+        }
+
+    } //end class Mongo
 
     public class Response
     {
@@ -102,7 +166,6 @@ namespace MikuMemories
 
 
     }
-}
 
 
 }

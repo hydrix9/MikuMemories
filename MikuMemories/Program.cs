@@ -175,28 +175,36 @@ namespace MikuMemories
 
         public static async Task TrySummarize()
         {
-            var characterResponseCollections = await Mongo.instance.GetCharacterResponseCollections();
-            var allResponses = new List<Response>();
+            var mongo = Mongo.instance;
+            int[] summaryLengths = Config.GetSummaryLengths();
 
-            foreach (var collection in characterResponseCollections)
+            foreach (int length in summaryLengths)
             {
-                var responses = await collection.Find(_ => true).ToListAsync();
-                allResponses.AddRange(responses.Select(responseBson => BsonSerializer.Deserialize<Response>(responseBson)));
+                var latestSummary = await Mongo.instance.GetLatestSummary(characterName, length);
+                bool shouldGenerateSummary = false;
+
+                if (latestSummary != null)
+                {
+                    var messagesSinceLastSummary = await mongo.GetLatestMessages(characterName, length);
+                    shouldGenerateSummary = messagesSinceLastSummary.Count >= length;
+                }
+                else
+                {
+                    shouldGenerateSummary = true;
+                }
+
+                if (shouldGenerateSummary)
+                {
+                    var latestMessages = await mongo.GetLatestMessagesFromUserResponses(length);
+
+                    string summaryText = PythonInterop.GenerateSummary(string.Join(Environment.NewLine, latestMessages));
+
+                    var summary = new Summary { SummaryLength = length, Text = summaryText, Timestamp = DateTime.UtcNow };
+                    await mongo.GetSummariesCollection(characterName).InsertOneAsync(summary);
+                }
             }
-
-            int messageCount = allResponses.Count;
-
-            if (messageCount == 0)
-            {
-                Console.WriteLine("No responses found.");
-                return;
-            }
-            
-
-
-            //await Mongo.instance.GetSummariesCollection(characterName).InsertOneAsync(summary);
-            
         }
+
 
 
         //startConversation will include the world scenario and character greeting
