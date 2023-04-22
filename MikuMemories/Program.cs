@@ -72,11 +72,7 @@ namespace MikuMemories
 
             characterName = characterCard.char_name;
 
-            //TODO: only run initial conversation if there is no chat history
             //TODO: create a more broad character that can develop and is stored in the database rather than the character card
-
-            //TODO: fix all instances of userName and make sure it uses characterName where appropriate instead
-            //TODO: make sure not generating summaries for USER
 
             //TODO: test summarization
 
@@ -138,7 +134,15 @@ namespace MikuMemories
 
         private static async Task<IEnumerable<Summary>> GetSummaries(string userName)
         {
-            return await Mongo.instance.GetSummariesCollection(userName).Find(_ => true).ToListAsync();
+            DateTime currentDate = DateTime.UtcNow;
+            TimeSpan timePeriod = TimeSpan.FromDays(7);
+            DateTime startDate = currentDate - timePeriod;
+
+            var relevantSummaries = await Mongo.instance.GetSummariesCollection(characterName)
+                .Find(summary => summary.StartDate <= currentDate && summary.EndDate >= startDate)
+                .ToListAsync();
+
+            return relevantSummaries;
         }
 
         private static string CompileFullContext(string baseContext, string recentResponses, string summaries)
@@ -200,11 +204,20 @@ namespace MikuMemories
 
                 string compiledText = string.Join(Environment.NewLine, allResponses.Select(r => $"{r.UserName}: {r.Text}"));
 
+                DateTime currentDate = DateTime.UtcNow;
+                TimeSpan timePeriod = TimeSpan.FromDays(7);
+                DateTime endDate = currentDate + timePeriod;
+
+
                 var summary = new Summary
                 {
                     Text = compiledText,
                     SummaryLength = summaryLength,
+                    StartDate = currentDate,
+                    EndDate = endDate
                 };
+
+
 
                 await Mongo.instance.GetSummariesCollection(userName).InsertOneAsync(summary);
             }

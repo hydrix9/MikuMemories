@@ -71,7 +71,7 @@ namespace MikuMemories
                     await Program.InsertResponseAsync(Mongo.instance.GetResponsesCollection(sender), res);
 
                     //create AI's viewpoint summary of the events
-                    await Program.TrySummarize(Config.GetValue("aiName"));
+                    await Program.TrySummarize(Program.characterName);
 
                     request.callback?.Invoke(response); //do whatever with response
 
