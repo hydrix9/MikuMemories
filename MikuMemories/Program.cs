@@ -82,6 +82,8 @@ namespace MikuMemories
 
             string startingContext = GenerateContext(characterCard, true);
 
+            await ProcessUserInput(userName, startingContext);
+
             while (true)
             {
                 await ProcessUserInput(userName);
@@ -139,9 +141,18 @@ namespace MikuMemories
             return await Mongo.instance.GetSummariesCollection(userName).Find(_ => true).ToListAsync();
         }
 
-        private static string CompileFullContext(string recentResponses, string summaries)
+        private static string CompileFullContext(string baseContext, string recentResponses, string summaries)
         {
-            return recentResponses + Environment.NewLine + summaries;
+            StringBuilder sb = new StringBuilder();
+
+            sb.AppendLine(baseContext);
+            sb.AppendLine(); // Adds an extra newline
+            sb.AppendLine(recentResponses);
+            sb.AppendLine(); // Adds an extra newline
+            sb.AppendLine(summaries);
+
+            return sb.ToString();
+
         }
 
         public static async Task TrySummarize(string userName)
@@ -219,8 +230,14 @@ namespace MikuMemories
         }
 
 
-        static async Task ProcessUserInput(string userName)
+        static async Task ProcessUserInput(string userName, string startingContext = null)
         {
+            // Generate continuingContext if startingContext is not specified
+            if (startingContext == null)
+            {
+                startingContext = GenerateContext(characterCard, false);
+            }
+
             // Get responses collection and recent responses.
             var responsesCollection = Mongo.instance.GetResponsesCollection(userName);
 
@@ -238,7 +255,7 @@ namespace MikuMemories
             string summaries = string.Join(Environment.NewLine, summariesRaw.Select(entry => entry.Text));
 
             // Get the compiled responses.
-            string fullContext = CompileFullContext(recentResponses, summaries);
+            string fullContext = CompileFullContext(startingContext, recentResponses, summaries);
 
             ///add request to be sent later in a queue
             LlmApi.QueueRequest(new LLmApiRequest(fullContext, LlmInputParams.defaultParams));
