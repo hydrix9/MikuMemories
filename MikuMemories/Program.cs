@@ -13,6 +13,10 @@ namespace MikuMemories
 {
     class Program
     {
+        
+        public static string characterName;
+        public static CharacterCard characterCard;
+
         static async Task Main(string[] args)
         {
             new Config(); //create instance
@@ -54,13 +58,33 @@ namespace MikuMemories
             // Print a welcome message to the user
             Console.WriteLine($"Welcome to the chat, {userName}!");
 
-            int responseLimit = 10;
 
             await Task.Run(LlmApi.instance.TryProcessQueue);
 
+            string characterCardFilePath = Config.FindCharacterCardFilePath(Config.GetValue("characterCardFileName"));
+
+            if (characterCardFilePath == null)
+            {
+                throw new Exception("character card " + Config.GetValue("characterCardFileName") + " not found, place in /Characters folder");
+            }
+
+            characterCard = Tools.LoadCharacterCardFromFile(characterCardFilePath);
+
+            characterName = characterCard.char_name;
+
+            //TODO: only run initial conversation if there is no chat history
+            //TODO: create a more broad character that can develop and is stored in the database rather than the character card
+
+            //TODO: fix all instances of userName and make sure it uses characterName where appropriate instead
+            //TODO: make sure not generating summaries for USER
+
+            //TODO: test summarization
+
+            string initialContext = GenerateInitialContext(characterCard, userName);
+
             while (true)
             {
-                await ProcessUserInput(userName, responseLimit);
+                await ProcessUserInput(userName);
             }
 
         }
@@ -161,12 +185,13 @@ namespace MikuMemories
                     summaryLength = 1; // Replace 1 with the desired summary length for the short summary
                 }
 
-                string compiledResponses = await CompileRecentResponsesAsync(Mongo.instance.GetResponsesCollection(userName), int.Parse(Config.GetValue("numRecentResponses")));
-                string summaryText = PythonInterop.GenerateSummary(compiledResponses, summaryLength);
+                //string compiledResponses = await CompileRecentResponsesAsync(Mongo.instance.GetResponsesCollection(userName), int.Parse(Config.GetValue("numRecentResponses")));
+
+                string compiledText = string.Join(Environment.NewLine, allResponses.Select(r => $"{r.UserName}: {r.Text}"));
 
                 var summary = new Summary
                 {
-                    Text = summaryText,
+                    Text = compiledText,
                     SummaryLength = summaryLength,
                 };
 
@@ -174,7 +199,15 @@ namespace MikuMemories
             }
         }
 
-        static async Task ProcessUserInput(string userName, int responseLimit)
+        private static string GenerateInitialContext(CharacterCard character, string userName)
+        {
+            string initialContext = character.char_persona + "\n";
+            initialContext += character.world_scenario.Replace("{{char}}", character.char_name).Replace("{{user}}", userName) + "\n";
+            initialContext += character.char_greeting;
+            return initialContext;
+        }
+
+        static async Task ProcessUserInput(string userName)
         {
             // Get responses collection and recent responses.
             var responsesCollection = Mongo.instance.GetResponsesCollection(userName);

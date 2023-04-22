@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -39,5 +40,32 @@ namespace MikuMemories
             return jObject.GetValue(propertyName).ToString();
 
         }
+
+        public static string FindCharacterCardFilePath(string characterCardFileName)
+        {
+            // Search for the character card file next to the executable
+            string executablePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string charactersFolderPath = Path.Combine(executablePath, "Characters");
+            string characterCardPath = Path.Combine(charactersFolderPath, characterCardFileName);
+
+            if (File.Exists(characterCardPath))
+            {
+                return characterCardPath;
+            }
+
+            // If the file is not found next to the executable, search in the project folder
+            string projectFolderPath = Directory.GetParent(executablePath).Parent.Parent.FullName;
+            string projectCharactersFolderPath = Path.Combine(projectFolderPath, "Characters");
+            string projectCharacterCardPath = Path.Combine(projectCharactersFolderPath, characterCardFileName);
+
+            if (File.Exists(projectCharacterCardPath))
+            {
+                return projectCharacterCardPath;
+            }
+
+            // If the file is not found in both locations, return null
+            return null;
+        }
     }
+
 }
