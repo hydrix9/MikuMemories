@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Python.Runtime;
 using System.IO;
 using MongoDB.Bson.Serialization;
+using MongoDB.Bson;
 
 namespace MikuMemories
 {
@@ -132,17 +133,30 @@ namespace MikuMemories
             return contextBuilder.ToString();
         }
 
-        private static async Task<IEnumerable<Summary>> GetSummaries(string userName)
+        private static async Task<IEnumerable<Summary>> GetSummaries()
         {
-            DateTime currentDate = DateTime.UtcNow;
-            TimeSpan timePeriod = TimeSpan.FromDays(7);
-            DateTime startDate = currentDate - timePeriod;
+            int[] summaryLengths = Config.GetSummaryLengths();
+            var collection = Mongo.instance.GetSummariesCollection(characterName);
+            var filterBuilder = Builders<Summary>.Filter;
 
-            var relevantSummaries = await Mongo.instance.GetSummariesCollection(characterName)
-                .Find(summary => summary.StartDate <= currentDate && summary.EndDate >= startDate)
-                .ToListAsync();
+            var summaries = new List<Summary>();
 
-            return relevantSummaries;
+            foreach (int length in summaryLengths)
+            {
+                var filter = filterBuilder.Eq("SummaryLength", length);
+                var latestSummary = await collection.Find(filter).SortByDescending(s => s.Timestamp).FirstOrDefaultAsync();
+
+                if (latestSummary != null)
+                {
+                    summaries.Add(latestSummary);
+                }
+                else
+                {
+                    Console.WriteLine($"No summaries found for length {length}");
+                }
+            }
+
+            return summaries;
         }
 
         private static string CompileFullContext(string baseContext, string recentResponses, string summaries)
@@ -159,7 +173,7 @@ namespace MikuMemories
 
         }
 
-        public static async Task TrySummarize(string userName)
+        public static async Task TrySummarize()
         {
             var characterResponseCollections = await Mongo.instance.GetCharacterResponseCollections();
             var allResponses = new List<Response>();
@@ -219,7 +233,7 @@ namespace MikuMemories
 
 
 
-                await Mongo.instance.GetSummariesCollection(userName).InsertOneAsync(summary);
+                await Mongo.instance.GetSummariesCollection(characterName).InsertOneAsync(summary);
             }
         }
 
@@ -264,7 +278,7 @@ namespace MikuMemories
 
             string recentResponses = await CompileRecentResponsesAsync(responsesCollection, int.Parse(Config.GetValue("numRecentResponses")));
 
-            IEnumerable<Summary> summariesRaw = await GetSummaries(userName);
+            IEnumerable<Summary> summariesRaw = await GetSummaries();
             string summaries = string.Join(Environment.NewLine, summariesRaw.Select(entry => entry.Text));
 
             // Get the compiled responses.

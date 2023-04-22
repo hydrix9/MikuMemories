@@ -19,6 +19,7 @@ namespace MikuMemories
         static JsonTextReader reader;
         static JObject jObject;
         static StreamReader streamReader;
+
         public Config()
         {
             instance = this; //set singleton
@@ -38,7 +39,6 @@ namespace MikuMemories
         public static string GetValue(string propertyName)
         {
             return jObject.GetValue(propertyName).ToString();
-
         }
 
         public static string FindCharacterCardFilePath(string characterCardFileName)
@@ -66,6 +66,11 @@ namespace MikuMemories
             // If the file is not found in both locations, return null
             return null;
         }
-    }
 
+        public static int[] GetSummaryLengths()
+        {
+            return jObject.GetValue("summariesLengths").ToObject<int[]>();
+        }
+
+    } //end class config
 }
