@@ -14,7 +14,7 @@
     "numRecentResponses": 10,
 
     "characterCardFileName": "example_character_card.json",
-    "summariesLengths": [ 2, 5, 10 ]
+    "summariesLengths": [ 100, 1000, 10000 ]
 
 
 }

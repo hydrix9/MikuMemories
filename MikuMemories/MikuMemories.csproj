@@ -155,13 +155,16 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CharacterCard.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="LlmApi\LlmApi.cs" />
     <Compile Include="LlmApi\LLmApiRequest.cs" />
     <Compile Include="LlmApi\LlmInputParams.cs" />
+    <Compile Include="Tools.cs" />
     <Compile Include="Mongo.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="PythonInterop.cs" />
     <Compile Include="RestApi.cs" />
   </ItemGroup>
   <ItemGroup>

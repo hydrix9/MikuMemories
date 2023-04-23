@@ -197,7 +197,7 @@ namespace MikuMemories
                 {
                     var latestMessages = await mongo.GetLatestMessagesFromUserResponses(length);
 
-                    string summaryText = PythonInterop.GenerateSummary(string.Join(Environment.NewLine, latestMessages));
+                    string summaryText = PythonInterop.GenerateSummary(string.Join(Environment.NewLine, latestMessages), Tools.CalculateSummaryRatio(length));
 
                     var summary = new Summary { SummaryLength = length, Text = summaryText, Timestamp = DateTime.UtcNow };
                     await mongo.GetSummariesCollection(characterName).InsertOneAsync(summary);

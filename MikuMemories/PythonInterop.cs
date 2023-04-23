@@ -11,7 +11,7 @@ namespace MikuMemories
             PythonEngine.Initialize();
         }
 
-        public static string GenerateSummary(string text, double ratio = 0.2)
+        public static string GenerateSummary(string text, double ratio = 0.3)
         {
             using (Py.GIL())
             {
