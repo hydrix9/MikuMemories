@@ -49,12 +49,66 @@ namespace MikuMemories
             Environment.SetEnvironmentVariable("PYTHONHOME", pythonPath);
             Environment.SetEnvironmentVariable("PYTHONPATH", pythonLibPath);
 
+            // Set the PYTHONNET_PYDLL environment variable
+            Environment.SetEnvironmentVariable("PYTHONNET_PYDLL", "/home/io/MikuMemories/MikuMemories/Python/lib/libpython3.so");
+
+
             // Initialize the Python runtime
             PythonEngine.Initialize();
 
             // Register event handlers for application exit
             AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
             Console.CancelKeyPress += OnCancelKeyPress;
+
+            CancellationTokenSource cts = new CancellationTokenSource();
+
+            Console.CancelKeyPress += (sender, e) =>
+            {
+                e.Cancel = true; // Prevent the process from being terminated immediately
+                cts.Cancel();     // Signal the cancellation token to cancel
+            };
+
+            string characterCardFileName = null;
+
+            // Parse command line arguments
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (args[i] == "--character" && i + 1 < args.Length)
+                {
+                    characterCardFileName = args[++i];
+                }
+                else if (args[i] == "--some-other-flag" && i + 1 < args.Length)
+                {
+                    // Handle other flag and its argument
+                    string someOtherArgument = args[++i];
+                    // Process the argument as needed
+                }
+                else if (!args[i].StartsWith("--") && characterCardFileName == null)
+                {
+                    characterCardFileName = args[i];
+                }
+            }
+
+            // Check if a suitable file path argument was provided
+            if (characterCardFileName != null)
+            {
+                try
+                {
+                    string characterCardFilePath = Config.FindCharacterCardFilePath(characterCardFileName);
+                    CharacterCard characterCard = CharacterLoader.LoadCharacter(characterCardFilePath);
+                    Console.WriteLine("Character card loaded.");
+                    // Use characterCard object as needed
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Error loading character card: " + ex.Message);
+                }
+            }
+            else
+            {
+                Console.WriteLine("Please provide a file path, either as the first non-flag argument or following the --character flag.");
+            }
+
 
 
             /*
@@ -78,18 +132,14 @@ namespace MikuMemories
             Console.WriteLine($"Welcome to the chat, {userName}!");
 
 
-            await Task.Run(LlmApi.instance.TryProcessQueue);
+            //run queue loop for LLM operations
+            Task.Run(LlmApi.instance.TryProcessQueue);
 
-            string characterCardFilePath = Config.FindCharacterCardFilePath(Config.GetValue("characterCardFileName"));
-
-            if (characterCardFilePath == null)
-            {
-                throw new Exception("character card " + Config.GetValue("characterCardFileName") + " not found, place in /Characters folder");
-            }
-
-            characterCard = Tools.LoadCharacterCardFromFile(characterCardFilePath);
 
             characterName = characterCard.char_name;
+
+            Console.WriteLine($"{characterCard.char_name} has entered the chat.");
+
 
             //TODO: create a more broad character that can develop and is stored in the database rather than the character card
 
@@ -99,9 +149,21 @@ namespace MikuMemories
 
             await ProcessUserInput(userName, startingContext);
 
-            while (true)
+
+
+            try
             {
-                await ProcessUserInput(userName);
+                // Execute the main logic of your program here
+                while (!cts.Token.IsCancellationRequested)
+                {
+                    await ProcessUserInput(userName);
+                }
+
+                Console.WriteLine("Shutting down gracefully...");
+            }
+            catch (OperationCanceledException)
+            {
+                // Handle any cleanup required on cancellation, if necessary
             }
 
         }
@@ -110,6 +172,8 @@ namespace MikuMemories
         private static void OnProcessExit(object sender, EventArgs e)
         {
             PythonEngine.Shutdown();
+            Environment.Exit(0);
+
         }
 
         // Event handler for keyboard interrupt (e.g., Ctrl+C)

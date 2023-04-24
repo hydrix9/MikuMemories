@@ -12,6 +12,7 @@ namespace MikuMemories
     {
 
         //get charater card from file path
+        /* use CharacterLoader.cs instead
         public static CharacterCard LoadCharacterCardFromFile(string filePath)
         {
             try
@@ -26,6 +27,7 @@ namespace MikuMemories
                 return null;
             }
         }
+        */
 
         //calculate the ratio of the summary text given the summary length
         public static double CalculateSummaryRatio(int summaryLength)

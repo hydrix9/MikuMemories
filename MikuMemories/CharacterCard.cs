@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace MikuMemories
 {
@@ -19,6 +21,11 @@ namespace MikuMemories
         public string scenario { get; set; }
         public string first_mes { get; set; }
         public string mes_example { get; set; }
+
+        public static CharacterCard FromJson(JObject jsonData)
+        {
+            return JsonConvert.DeserializeObject<CharacterCard>(jsonData.ToString());
+        }
     }
 
 }
