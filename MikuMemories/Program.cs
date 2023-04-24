@@ -14,6 +14,24 @@ namespace MikuMemories
 {
     class Program
     {
+
+        /*
+        Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
+
+        ### Instruction:
+        {instruction}
+
+        ### Input:
+        {input}
+
+        ### Response:
+
+
+        */
+
+
+
+        
         
         public static string characterName;
         public static CharacterCard characterCard;
