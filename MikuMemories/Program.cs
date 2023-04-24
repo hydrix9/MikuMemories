@@ -147,7 +147,7 @@ namespace MikuMemories
 
             string startingContext = GenerateContext(characterCard, true);
 
-            await ProcessUserInput(userName, startingContext);
+            await ProcessUserInput(userName, cts.Token, startingContext);
 
 
 
@@ -156,7 +156,7 @@ namespace MikuMemories
                 // Execute the main logic of your program here
                 while (!cts.Token.IsCancellationRequested)
                 {
-                    await ProcessUserInput(userName);
+                    await ProcessUserInput(userName, cts.Token);
                 }
 
                 Console.WriteLine("Shutting down gracefully...");
@@ -165,7 +165,11 @@ namespace MikuMemories
             {
                 // Handle any cleanup required on cancellation, if necessary
             }
-
+            finally
+            {
+                Console.WriteLine("Shutting down gracefully...");
+            }
+            
         }
 
         // Event handler for application exit
@@ -308,8 +312,10 @@ namespace MikuMemories
         }
 
 
-        static async Task ProcessUserInput(string userName, string startingContext = null)
+        static async Task ProcessUserInput(string userName, CancellationToken cancellationToken, string startingContext = null)
         {
+            StringBuilder inputBuilder = new StringBuilder();
+
             // Generate continuingContext if startingContext is not specified
             if (startingContext == null)
             {
@@ -321,22 +327,48 @@ namespace MikuMemories
 
             // Get user input and append it to recentResponses.
             Console.Write($"{userName}: ");
-            string userInput = Console.ReadLine();
-            Response userResponse = new Response { UserName = userName, Text = userInput, Timestamp = System.DateTime.UtcNow };
 
-            await InsertResponseAsync(responsesCollection, userResponse);
-            
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                if (Console.KeyAvailable)
+                {
+                    ConsoleKeyInfo keyInfo = Console.ReadKey();
 
-            string recentResponses = await CompileRecentResponsesAsync(responsesCollection, int.Parse(Config.GetValue("numRecentResponses")));
+                    if (keyInfo.Key == ConsoleKey.Enter)
+                    {
+                        string input = inputBuilder.ToString();
 
-            IEnumerable<Summary> summariesRaw = await GetSummaries();
-            string summaries = string.Join(Environment.NewLine, summariesRaw.Select(entry => entry.Text));
+                        if (!string.IsNullOrEmpty(input))
+                        {
 
-            // Get the compiled responses.
-            string fullContext = CompileFullContext(startingContext, recentResponses, summaries);
+                            Response userResponse = new Response { UserName = userName, Text = input, Timestamp = System.DateTime.UtcNow };
 
-            ///add request to be sent later in a queue
-            LlmApi.QueueRequest(new LLmApiRequest(fullContext, LlmInputParams.defaultParams));
+                            await InsertResponseAsync(responsesCollection, userResponse);
+                            
+
+                            string recentResponses = await CompileRecentResponsesAsync(responsesCollection, int.Parse(Config.GetValue("numRecentResponses")));
+
+                            IEnumerable<Summary> summariesRaw = await GetSummaries();
+                            string summaries = string.Join(Environment.NewLine, summariesRaw.Select(entry => entry.Text));
+
+                            // Get the compiled responses.
+                            string fullContext = CompileFullContext(startingContext, recentResponses, summaries);
+
+                            ///add request to be sent later in a queue
+                            LlmApi.QueueRequest(new LLmApiRequest(fullContext, LlmInputParams.defaultParams));
+                            
+                        }
+                    }
+                    
+                    else
+                    {
+                        inputBuilder.Append(keyInfo.KeyChar);
+                    }
+                }
+
+                await Task.Delay(5); // Add a small delay to prevent high CPU usage
+            }
+                    
         }
 
 
