@@ -26,7 +26,6 @@ namespace MikuMemories
 
         ### Response:
 
-
         */
 
 
@@ -325,11 +324,29 @@ namespace MikuMemories
         {
             StringBuilder sb = new StringBuilder();
 
+
+/*
+        Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
+
+        ### Instruction:
+        {instruction}
+
+        ### Input:
+        {input}
+
+        ### Response:
+*/
+
+            sb.AppendLine("Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.");
+            sb.AppendLine("### Instruction:");
+            sb.AppendLine("generate the next line of this conversation from the character " + characterName);
+            sb.AppendLine("### Input:");
             sb.AppendLine(baseContext);
             sb.AppendLine(); // Adds an extra newline
             sb.AppendLine(recentResponses);
             sb.AppendLine(); // Adds an extra newline
             sb.AppendLine(summaries);
+            sb.AppendLine("### Response:");
 
             return sb.ToString();
 

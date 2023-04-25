@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using System.Text.RegularExpressions;
 
 namespace MikuMemories
 {
@@ -35,19 +36,37 @@ namespace MikuMemories
             return Guid.NewGuid().ToString("N");
         }
 
+
         public string AsString()
         {
-            string jsonString = JsonConvert.SerializeObject(new object[] { prompt, @params });
-            return "{\"data\": [ " + "\"" + jsonString.Replace("\"", "\\\"") + "\"" + "]}";
+            string promptWithoutConsecutiveNewlines = Regex.Replace(prompt, @"\n{2,}", "\n");
+            string jsonString = JsonConvert.SerializeObject(new object[] { promptWithoutConsecutiveNewlines, @params });
+            jsonString = jsonString.Replace("\\", "\\\\").Replace("\"", "\\\"");
+            return "{\"data\": [\"" + jsonString + "\"]}";
         }
 
-        public string AsString_old2()
+        public string AsString_raw()
+        {
+            string jsonString = JsonConvert.SerializeObject(new object[] { prompt, @params });
+            jsonString = jsonString.Replace("\\", "\\\\").Replace("\"", "\\\"");
+            return "{\"data\": [\"" + jsonString + "\"]}";
+        }
+
+
+        public string AsString_old()
+        {
+            string jsonString = JsonConvert.SerializeObject(new object[] { prompt, @params });
+            jsonString = jsonString.Replace("\\", "\\\\").Replace("\"", "\\\"");
+            return "{\"data\": [\"" + jsonString + "\"]}";
+        }
+
+        public string AsString_old3()
         {
             return "{\"data\": [[" + "\"" + prompt + "\"," + JsonConvert.SerializeObject(@params) + "]]}";
 
         }
 
-        public string AsString_old()
+        public string AsString_old2()
         {
             return "[" + "{\"prompt\":" + "\"" + prompt + "\"}," + JsonConvert.SerializeObject(@params) + "]";
 

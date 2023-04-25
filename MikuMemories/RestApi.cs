@@ -6,57 +6,45 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using System.Net.Http;
+using System.Net.Http.Headers;
 
 namespace MikuMemories
 {
     public class RestApi
     {
-        public static string PostRequest(string url, string json)
+            
+        public static async Task<string> PostRequest(string url, string json)
         {
-            HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(url);
-            httpWebRequest.ContentType = "application/json; charset=utf-8";
-            httpWebRequest.Method = "POST";
+            using var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Accept.Clear();
+            httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-            string result = "";
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
-            {
-                //Debug.Write(json);
-                streamWriter.Write(json);
-                streamWriter.Flush();
-                streamWriter.Close();
-            }
+            HttpResponseMessage response;
+
             try
             {
-                using (var response = httpWebRequest.GetResponse() as HttpWebResponse)
-                {
-                    if (httpWebRequest.HaveResponse && response != null)
-                    {
-                        using (var reader = new StreamReader(response.GetResponseStream()))
-                        {
-                            result = reader.ReadToEnd();
-                        }
-                    }
-                }
+                response = await httpClient.PostAsync(url, content);
             }
-            catch (WebException e)
+            catch (HttpRequestException e)
             {
-                if (e.Response != null)
-                {
-                    using (var errorResponse = (HttpWebResponse)e.Response)
-                    {
-                        using (var reader = new StreamReader(errorResponse.GetResponseStream()))
-                        {
-                            string error = reader.ReadToEnd();
-                            result = error;
-                        }
-                    }
-
-                }
+                Console.WriteLine($"Error: {e.Message}");
+                return null;
             }
 
-            return result;
-
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadAsStringAsync();
+            }
+            else
+            {
+                Console.WriteLine($"Error: {response.StatusCode}");
+                Console.WriteLine("Response content:");
+                Console.WriteLine(await response.Content.ReadAsStringAsync());
+                return null;
+            }
         }
 
     }

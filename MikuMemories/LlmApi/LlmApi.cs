@@ -35,7 +35,8 @@ namespace MikuMemories
                     LLmApiRequest request = requestQueue[0];
                     requestQueue.Remove(request);
 
-                    string jsonResponse = RestApi.PostRequest(Config.GetValue("llmsrv"), request.AsString());
+                    Console.WriteLine("sending request: \n" + request.AsString());
+                    string jsonResponse = await RestApi.PostRequest(Config.GetValue("llmsrv"), request.AsString());
                     JObject parsedResponse = JObject.Parse(jsonResponse);
                     JArray data = (JArray)parsedResponse["data"];
                     string response = data[0].ToString();

@@ -79,7 +79,7 @@ namespace MikuMemories
 
         public static LlmInputParams defaultParams
             = new LlmInputParams(
-                200,
+                1000,
                 true,
                 0.72f,
                 0.73f,
