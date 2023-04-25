@@ -46,12 +46,7 @@ namespace MikuMemories
 
         public IMongoCollection<Response> GetUserCollection(string userName, string type)
         {
-            if (string.IsNullOrEmpty(userName) || userName.Contains('.') || userName.Contains('\0'))
-            {
-                throw new ArgumentException("Invalid userName value.", nameof(userName));
-            }
-
-            return _client.GetDatabase(userName).GetCollection<Response>($"user_{type}");
+            return _client.GetDatabase(FormatUserName(userName)).GetCollection<Response>($"user_{type}");
         }
 
         public void InsertResponse(string userName, Response response)
@@ -63,14 +58,14 @@ namespace MikuMemories
         public IMongoCollection<Response> GetResponsesCollection(string userName)
         {
 
-            var database = _client.GetDatabase(userName);
+            var database = _client.GetDatabase(FormatUserName(userName));
             var collection = database.GetCollection<Response>(responseCollection);
             return collection;
         }
         public IMongoCollection<Summary> GetSummariesCollection(string userName)
         {
 
-            var database = _client.GetDatabase(userName);
+            var database = _client.GetDatabase(FormatUserName(userName));
             var collection = database.GetCollection<Summary>(summariesCollection);
             return collection;
         }
@@ -109,7 +104,7 @@ namespace MikuMemories
 
         public async Task<List<string>> GetLatestMessages(string characterName, int count)
         {
-            var database = _client.GetDatabase(characterName);
+            var database = _client.GetDatabase(FormatUserName(characterName));
             var collection = database.GetCollection<BsonDocument>(responseCollection);
             var messages = await collection.Find(new BsonDocument())
                                            .SortByDescending(m => m["timestamp"])
@@ -122,7 +117,7 @@ namespace MikuMemories
         //used to get the summary that uses a length called length, it is then combined with all the other latest summaries to form the context
         public async Task<Summary> GetLatestSummary(string characterName, int length)
         {
-            var collection = GetSummariesCollection(characterName);
+            var collection = GetSummariesCollection(FormatUserName(characterName));
             var filter = Builders<Summary>.Filter.Eq("SummaryLength", length);
             var latestSummaryBson = await collection.Find(filter).SortByDescending(s => s.Timestamp).FirstOrDefaultAsync();
 
@@ -153,6 +148,18 @@ namespace MikuMemories
             //return allMessages.Select(m => m.Text).ToList();
             return allMessages;
         }
+
+        public static string FormatUserName(string username)
+        {
+            string returns = username.Replace(".", "");
+
+            if (string.IsNullOrEmpty(returns) || returns.Contains('\0'))
+            {
+                throw new ArgumentException("Invalid userName value.", nameof(returns));
+            }
+            return returns;
+        }
+
 
     } //end class Mongo
 
