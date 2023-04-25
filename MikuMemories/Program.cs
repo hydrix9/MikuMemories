@@ -64,6 +64,7 @@ namespace MikuMemories
 
             Console.CancelKeyPress += (sender, e) =>
             {
+                Console.WriteLine("\nCtrl+C pressed. Exiting...");
                 e.Cancel = true; // Prevent the process from being terminated immediately
                 cts.Cancel();     // Signal the cancellation token to cancel
             };
@@ -170,7 +171,7 @@ namespace MikuMemories
 
             string startingContext = GenerateContext(characterCard, true);
 
-            var processUserInputTask = Task.Run(() => ProcessUserInput(userName, startingContext));
+            var processUserInputTask = Task.Run(() => ProcessUserInput(userName, cts, startingContext));
 
             try
             {
@@ -188,7 +189,7 @@ namespace MikuMemories
                 // Execute the main logic of your program here
                 while (!cts.Token.IsCancellationRequested)
                 {
-                    await ProcessUserInput(userName);
+                    await ProcessUserInput(userName, cts);
                 }
 
                 Console.WriteLine("Shutting down gracefully...");
@@ -369,7 +370,7 @@ namespace MikuMemories
         }
 
 
-        static async Task ProcessUserInput(string userName, string startingContext = null)
+        static async Task ProcessUserInput(string userName, CancellationTokenSource cts, string startingContext = null)
         {
             StringBuilder inputBuilder = new StringBuilder();
 
@@ -383,43 +384,44 @@ namespace MikuMemories
             var responsesCollection = Mongo.instance.GetResponsesCollection(userName);
 
             // Get user input and append it to recentResponses.
+            string input = string.Empty;
 
-            if (Console.KeyAvailable)
+            while (!cts.Token.IsCancellationRequested)
             {
-                ConsoleKeyInfo keyInfo = Console.ReadKey();
+                int initialLeft = Console.CursorLeft;
+                int initialTop = Console.CursorTop;
 
-                if (keyInfo.Key == ConsoleKey.Enter)
+                input = Console.ReadLine();
+
+                if (string.IsNullOrEmpty(input))
                 {
-                    string input = inputBuilder.ToString();
-
-                    if (!string.IsNullOrEmpty(input))
-                    {
-
-                        Response userResponse = new Response { UserName = userName, Text = input, Timestamp = System.DateTime.UtcNow };
-
-                        await InsertResponseAsync(responsesCollection, userResponse);
-                        
-
-                        string recentResponses = await CompileRecentResponsesAsync(responsesCollection, int.Parse(Config.GetValue("numRecentResponses")));
-
-                        IEnumerable<Summary> summariesRaw = await GetSummaries();
-                        string summaries = string.Join(Environment.NewLine, summariesRaw.Select(entry => entry.Text));
-
-                        // Get the compiled responses.
-                        string fullContext = CompileFullContext(startingContext, recentResponses, summaries);
-
-                        ///add request to be sent later in a queue
-                        LlmApi.QueueRequest(new LLmApiRequest(fullContext, LlmInputParams.defaultParams));
-                        
-                    }
+                    //Console.WriteLine("No input received. Please try again.");
+                    continue;
                 }
+                Console.SetCursorPosition(initialLeft, initialTop);
+                Console.Write(new string(' ', input.Length));
+                Console.SetCursorPosition(initialLeft, initialTop);
+
+                Console.WriteLine(userName + ": " + input);
+                Response userResponse = new Response { UserName = userName, Text = input, Timestamp = System.DateTime.UtcNow };
+
+                await InsertResponseAsync(responsesCollection, userResponse);
                 
-                else
-                {
-                    inputBuilder.Append(keyInfo.KeyChar);
-                }
+
+                string recentResponses = await CompileRecentResponsesAsync(responsesCollection, int.Parse(Config.GetValue("numRecentResponses")));
+
+                IEnumerable<Summary> summariesRaw = await GetSummaries();
+                string summaries = string.Join(Environment.NewLine, summariesRaw.Select(entry => entry.Text));
+
+                // Get the compiled responses.
+                string fullContext = CompileFullContext(startingContext, recentResponses, summaries);
+
+                ///add request to be sent later in a queue
+                LlmApi.QueueRequest(new LLmApiRequest(fullContext, LlmInputParams.defaultParams));
+             
             }
-                    
+            
+       
         }
 
 
