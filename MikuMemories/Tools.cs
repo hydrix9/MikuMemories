@@ -51,7 +51,5 @@ namespace MikuMemories
             return ratio;
         }
 
-
-
     } //end class tools
 }

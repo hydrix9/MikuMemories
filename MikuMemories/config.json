@@ -10,7 +10,6 @@
 
     "mongosrv": "mongodb://localhost:27017",
     "llmsrv": "http://127.0.0.1:7860/run/textgen",
-    //"llmsrv": "http://127.0.0.1:5000/api",
     "numRecentResponses": 10,
 
     "characterCardFileName": "example_character_card.json",

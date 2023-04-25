@@ -37,7 +37,7 @@ namespace MikuMemories
         public static CharacterCard characterCard;
 
         static async Task Main(string[] args)
-        {
+        { 
             new Config(); //create instance
             new Mongo(); //create instance
             new LlmApi(); //create instance
@@ -89,26 +89,29 @@ namespace MikuMemories
                 }
             }
 
+            Console.WriteLine($"characterCardFileName: {characterCardFileName}");
+
             // Check if a suitable file path argument was provided
             if (characterCardFileName != null)
             {
                 try
                 {
                     string characterCardFilePath = Config.FindCharacterCardFilePath(characterCardFileName);
-                    CharacterCard characterCard = CharacterLoader.LoadCharacter(characterCardFilePath);
+                    characterCard = await CharacterLoader.LoadCharacter(characterCardFilePath);
                     Console.WriteLine("Character card loaded.");
+                    //Console.WriteLine(characterCard.ToString());
+
                     // Use characterCard object as needed
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Error loading character card: " + ex.Message);
+                    throw new Exception("Error loading character card: " + ex.Message);
                 }
             }
             else
             {
-                Console.WriteLine("Please provide a file path, either as the first non-flag argument or following the --character flag.");
+                throw new Exception("Please provide a file path, either as the first non-flag argument or following the --character flag.");
             }
-
 
 
             /*
@@ -125,6 +128,11 @@ namespace MikuMemories
             Console.WriteLine("Welcome to MikuMemories!");
 
             Console.WriteLine(" Enabling chat interface");
+
+            Chat(cts);
+        }
+
+        private static async void Chat(CancellationTokenSource cts) {
 
             string userName = null;
             try

@@ -4,12 +4,14 @@ using System.Text;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Newtonsoft.Json.Linq;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace MikuMemories
 {
     public class CharacterLoader
     {
-        public static CharacterCard LoadCharacter(string filePath)
+        public static async Task<CharacterCard> LoadCharacter(string filePath)
         {
             string fileExtension = Path.GetExtension(filePath);
             JObject characterData;
@@ -20,7 +22,10 @@ namespace MikuMemories
                     characterData = LoadJsonFromFile(filePath);
                     break;
                 case ".png":
-                    characterData = LoadJsonFromPng(filePath);
+                    //characterData = CharacterLoader.LoadJsonFromPng(filePath);
+                    // characterData = JObject.Parse(ReadLastLine(filePath));
+                    characterData = await LoadJsonFromPng(filePath);
+
                     break;
                 default:
                     throw new ArgumentException("Unsupported file type. Please provide a JSON or PNG file.");
@@ -35,47 +40,22 @@ namespace MikuMemories
             return JObject.Parse(jsonData);
         }
 
-        private static JObject LoadJsonFromPng(string filePath)
-        {
-            using (Image<Rgba32> image = Image.Load<Rgba32>(filePath))
+        private static readonly string WrapperJsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TavernAiWrapper", "tavernaiWrapper.js");
+
+        
+        public static async Task<JObject> LoadJsonFromPng(string filePath)
             {
-                StringBuilder jsonData = new StringBuilder();
-                byte currentByte = 0;
-                int bitIndex = 0;
-
-                for (int y = 0; y < image.Height; y++)
+                try
                 {
-                    for (int x = 0; x < image.Width; x++)
-                    {
-                        Rgba32 pixel = image[x, y];
-                        byte[] bytes = { pixel.R, pixel.G, pixel.B, pixel.A };
-
-                        foreach (byte b in bytes)
-                        {
-                            currentByte |= (byte)((b & 1) << (7 - bitIndex));
-                            bitIndex++;
-
-                            if (bitIndex == 8)
-                            {
-                                if (currentByte == 0)
-                                {
-                                    // End of JSON data
-                                    return JObject.Parse(jsonData.ToString());
-                                }
-
-                                jsonData.Append((char)currentByte);
-                                currentByte = 0;
-                                bitIndex = 0;
-                            }
-                        }
-                    }
+                    string json = await NodeServiceHandler.nodeJSService.InvokeFromFileAsync<string>(WrapperJsPath, "loadJsonFromPng", args: new object[] { filePath });
+                    return JObject.Parse(json);
                 }
-
-                // If the loop finishes, the JSON data may be incomplete or not properly terminated
-                throw new ArgumentException("The JSON data in the PNG file appears to be incomplete or not properly terminated.");
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error loading character card: {ex.Message}");
+                    return null;
+                }
             }
-        }
-
-
     }
+
 }

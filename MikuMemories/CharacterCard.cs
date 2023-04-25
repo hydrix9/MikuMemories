@@ -26,6 +26,11 @@ namespace MikuMemories
         {
             return JsonConvert.DeserializeObject<CharacterCard>(jsonData.ToString());
         }
+
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this);
+        }
     }
 
 }
