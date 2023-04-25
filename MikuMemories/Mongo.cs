@@ -4,7 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
+
 namespace MikuMemories
 {
     public class Mongo
@@ -22,7 +24,6 @@ namespace MikuMemories
         {
             _client = new MongoClient(Config.GetValue("mongosrv"));
             instance = this; //set singleton instance
-
         }
 
         public async Task<List<IMongoDatabase>> GetUserDatabases()
@@ -45,6 +46,11 @@ namespace MikuMemories
 
         public IMongoCollection<Response> GetUserCollection(string userName, string type)
         {
+            if (string.IsNullOrEmpty(userName) || userName.Contains('.') || userName.Contains('\0'))
+            {
+                throw new ArgumentException("Invalid userName value.", nameof(userName));
+            }
+
             return _client.GetDatabase(userName).GetCollection<Response>($"user_{type}");
         }
 
@@ -61,10 +67,10 @@ namespace MikuMemories
             var collection = database.GetCollection<Response>(responseCollection);
             return collection;
         }
-        public IMongoCollection<Summary> GetSummariesCollection(string username)
+        public IMongoCollection<Summary> GetSummariesCollection(string userName)
         {
 
-            var database = _client.GetDatabase(username);
+            var database = _client.GetDatabase(userName);
             var collection = database.GetCollection<Summary>(summariesCollection);
             return collection;
         }
@@ -152,6 +158,9 @@ namespace MikuMemories
 
     public class Response
     {
+        [BsonId]
+        [BsonElement("_id")]
+        public ObjectId Id { get; set; }
         public DateTime Timestamp { get; set; }
         public string UserName { get; set; }
         public string Text { get; set; }

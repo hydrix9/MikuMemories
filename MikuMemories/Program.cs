@@ -30,8 +30,6 @@ namespace MikuMemories
         */
 
 
-
-        
         
         public static string characterName;
         public static CharacterCard characterCard;
@@ -255,7 +253,27 @@ namespace MikuMemories
 
         public static async Task InsertResponseAsync(IMongoCollection<Response> collection, Response response)
         {
-            await collection.InsertOneAsync(response);
+            Console.WriteLine("InsertResponseAsync: Trying to insert the user response...");
+
+            try
+            {
+                var insertTask = collection.InsertOneAsync(response);
+                const int timeoutMs = 5000;
+
+                if (await Task.WhenAny(insertTask, Task.Delay(timeoutMs)) == insertTask)
+                {
+                    await insertTask;
+                    Console.WriteLine("InsertResponseAsync: User response inserted.");
+                }
+                else
+                {
+                    Console.WriteLine("InsertResponseAsync: Insert operation timed out.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("InsertResponseAsync: Error: " + ex.Message);
+            }
         }
 
         private static async Task<string> CompileRecentResponsesAsync(IMongoCollection<Response> responsesCollection, int n)
@@ -392,33 +410,94 @@ namespace MikuMemories
                 int initialTop = Console.CursorTop;
 
                 input = Console.ReadLine();
-
-                if (string.IsNullOrEmpty(input))
+                if (!string.IsNullOrEmpty(input))
                 {
-                    //Console.WriteLine("No input received. Please try again.");
-                    continue;
+                    Console.SetCursorPosition(0, Console.CursorTop - 1);
+                    Console.Write(new string(' ', Console.WindowWidth));
+                    Console.SetCursorPosition(0, Console.CursorTop - 1);
+                    Console.Write(userName + ": " + input + Environment.NewLine);
                 }
-                Console.SetCursorPosition(initialLeft, initialTop);
-                Console.Write(new string(' ', input.Length));
-                Console.SetCursorPosition(initialLeft, initialTop);
 
-                Console.WriteLine(userName + ": " + input);
+                
                 Response userResponse = new Response { UserName = userName, Text = input, Timestamp = System.DateTime.UtcNow };
 
-                await InsertResponseAsync(responsesCollection, userResponse);
-                
+                try
+                {
+                                    
+                // Set a timeout in milliseconds
+                const int timeoutMs = 5000; 
 
-                string recentResponses = await CompileRecentResponsesAsync(responsesCollection, int.Parse(Config.GetValue("numRecentResponses")));
+                string recentResponses = "";
 
-                IEnumerable<Summary> summariesRaw = await GetSummaries();
-                string summaries = string.Join(Environment.NewLine, summariesRaw.Select(entry => entry.Text));
+                Console.WriteLine("Starting InsertResponseAsync...");
+                try
+                {
+                    var insertResponseTask = InsertResponseAsync(responsesCollection, userResponse);
+                    if (await Task.WhenAny(insertResponseTask, Task.Delay(timeoutMs)) == insertResponseTask)
+                    {
+                        await insertResponseTask;
+                        Console.WriteLine("InsertResponseAsync completed.");
+                    }
+                    else
+                    {
+                        Console.WriteLine("InsertResponseAsync timed out.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Error in InsertResponseAsync: " + ex.Message);
+                }
 
-                // Get the compiled responses.
-                string fullContext = CompileFullContext(startingContext, recentResponses, summaries);
+                Console.WriteLine("Starting CompileRecentResponsesAsync...");
+                try
+                {
+                    var compileRecentResponsesTask = CompileRecentResponsesAsync(responsesCollection, int.Parse(Config.GetValue("numRecentResponses")));
+                    if (await Task.WhenAny(compileRecentResponsesTask, Task.Delay(timeoutMs)) == compileRecentResponsesTask)
+                    {
+                        recentResponses = await compileRecentResponsesTask;
+                        Console.WriteLine("CompileRecentResponsesAsync completed.");
+                    }
+                    else
+                    {
+                        Console.WriteLine("CompileRecentResponsesAsync timed out.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Error in CompileRecentResponsesAsync: " + ex.Message);
+                }
 
-                ///add request to be sent later in a queue
-                LlmApi.QueueRequest(new LLmApiRequest(fullContext, LlmInputParams.defaultParams));
-             
+                Console.WriteLine("Starting GetSummaries...");
+                try
+                {
+                    var getSummariesTask = GetSummaries();
+                    if (await Task.WhenAny(getSummariesTask, Task.Delay(timeoutMs)) == getSummariesTask)
+                    {
+                        IEnumerable<Summary> summariesRaw = await getSummariesTask;
+                        string summaries = string.Join(Environment.NewLine, summariesRaw.Select(entry => entry.Text));
+
+                        // Get the compiled responses.
+                        string fullContext = CompileFullContext(startingContext, recentResponses, summaries);
+
+                        ///add request to be sent later in a queue
+                        LlmApi.QueueRequest(new LLmApiRequest(fullContext, LlmInputParams.defaultParams));
+
+                        Console.WriteLine("GetSummaries completed.");
+                    }
+                    else
+                    {
+                        Console.WriteLine("GetSummaries timed out.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Error in GetSummaries or QueueRequest: " + ex.Message);
+                }
+
+                } catch (Exception ex)
+                {
+                    Console.WriteLine("Error in CompileRecentResponsesAsync: " + ex.Message);
+                }
             }
             
        
