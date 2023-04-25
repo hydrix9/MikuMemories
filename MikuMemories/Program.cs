@@ -154,7 +154,7 @@ namespace MikuMemories
 
 
             //run queue loop for LLM operations
-            Task.Run(LlmApi.instance.TryProcessQueue);
+            Task.Run(() => LlmApi.instance.TryProcessQueue());
 
 
             characterName = characterCard.name;
