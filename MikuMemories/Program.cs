@@ -35,6 +35,10 @@ namespace MikuMemories
 
         public static bool logInputSteps = false;
 
+        // Set a timeout in milliseconds for mongo 
+        const int timeoutMs = 5000; 
+
+
         static async Task Main(string[] args)
         { 
 
@@ -136,6 +140,17 @@ namespace MikuMemories
             Console.WriteLine("Enabling chat interface");
 
             Chat(cts);
+
+
+            //run queue loop for LLM operations
+            var timer = new System.Timers.Timer(5); // Set the interval to 5ms
+            string startingContext = GenerateContext(characterCard, true);
+            timer.Elapsed += async (sender, e) => await ReadDatabaseResponsesTryRespond(startingContext);
+            timer.Start();
+
+
+            //timer.Stop(); ///not sure where to put this...
+
         }
 
         private static async void Chat(CancellationTokenSource cts) {
@@ -174,11 +189,8 @@ namespace MikuMemories
 
             //TODO: create a more broad character that can develop and is stored in the database rather than the character card
 
-            //TODO: test summarization
 
-            string startingContext = GenerateContext(characterCard, true);
-
-            var processUserInputTask = Task.Run(() => ProcessUserInput(userName, cts, startingContext));
+            var processUserInputTask = Task.Run(() => ProcessUserInput(userName, cts));
 
             try
             {
@@ -404,15 +416,9 @@ namespace MikuMemories
         }
 
 
-        static async Task ProcessUserInput(string userName, CancellationTokenSource cts, string startingContext = null)
+        static async Task ProcessUserInput(string userName, CancellationTokenSource cts)
         {
             StringBuilder inputBuilder = new StringBuilder();
-
-            // Generate continuingContext if startingContext is not specified
-            if (startingContext == null)
-            {
-                startingContext = GenerateContext(characterCard, false);
-            }
 
             // Get responses collection and recent responses.
             var responsesCollection = Mongo.instance.GetResponsesCollection(userName);
@@ -439,30 +445,48 @@ namespace MikuMemories
 
                 try
                 {
-                                    
-                // Set a timeout in milliseconds
-                const int timeoutMs = 5000; 
+                    if(logInputSteps) Console.WriteLine("Starting InsertResponseAsync...");
+                    try
+                    {
+                        var insertResponseTask = InsertResponseAsync(responsesCollection, userResponse);
+                        if (await Task.WhenAny(insertResponseTask, Task.Delay(timeoutMs)) == insertResponseTask)
+                        {
+                            await insertResponseTask;
+                            if(logInputSteps) Console.WriteLine("InsertResponseAsync completed.");
+                        }
+                        else
+                        {
+                            Console.WriteLine("InsertResponseAsync timed out.");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("Error in InsertResponseAsync: " + ex.Message);
+                    }
+
+                } catch (Exception ex)
+                {
+                    Console.WriteLine("Error in CompileRecentResponsesAsync: " + ex.Message);
+                }
+            }
+            
+       
+        }
+
+        private static async Task ReadDatabaseResponsesTryRespond(string startingContext = null) {
+            
+                // Generate continuingContext if startingContext is not specified
+                if (startingContext == null)
+                {
+                    startingContext = GenerateContext(characterCard, false);
+                }
+
+
+                // Get responses collection and recent responses.
+                //GetCharacterResponseCollections
+                var responsesCollection = Mongo.instance.GetResponsesCollection(userName);
 
                 string recentResponses = "";
-
-                if(logInputSteps) Console.WriteLine("Starting InsertResponseAsync...");
-                try
-                {
-                    var insertResponseTask = InsertResponseAsync(responsesCollection, userResponse);
-                    if (await Task.WhenAny(insertResponseTask, Task.Delay(timeoutMs)) == insertResponseTask)
-                    {
-                        await insertResponseTask;
-                        if(logInputSteps) Console.WriteLine("InsertResponseAsync completed.");
-                    }
-                    else
-                    {
-                        Console.WriteLine("InsertResponseAsync timed out.");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine("Error in InsertResponseAsync: " + ex.Message);
-                }
 
                 if(logInputSteps) Console.WriteLine("Starting CompileRecentResponsesAsync...");
                 try
@@ -483,7 +507,7 @@ namespace MikuMemories
                     Console.WriteLine("Error in CompileRecentResponsesAsync: " + ex.Message);
                 }
 
-                if(logInputSteps) Console.WriteLine("Starting GetSummaries...");
+                if(logInputSteps) Console.WriteLine("Starting GetSummaries and Context Compile...");
 
                 try
                 {
@@ -497,7 +521,7 @@ namespace MikuMemories
                         // Get the compiled responses.
                         fullContext = CompileFullContext(startingContext, recentResponses, summaries);
 
-                        if(logInputSteps) Console.WriteLine("GetSummaries completed.");
+                        if(logInputSteps) Console.WriteLine("GetSummaries and Context Compile completed.");
                     }
                     else
                     {
@@ -512,16 +536,7 @@ namespace MikuMemories
                 {
                     Console.WriteLine("Error in GetSummaries or QueueRequest: " + ex.Message);
                 }
-
-                } catch (Exception ex)
-                {
-                    Console.WriteLine("Error in CompileRecentResponsesAsync: " + ex.Message);
-                }
-            }
-            
-       
         }
-
 
     } //end class Main
 
