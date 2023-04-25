@@ -126,7 +126,23 @@ namespace MikuMemories
 
             Console.WriteLine(" Enabling chat interface");
             Console.Write("Please enter your name: ");
-            string userName = Console.ReadLine();
+
+            string userName = null;
+            try
+            {
+                userName = await GetUserName(cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Shutting down gracefully...");
+                return;
+            }
+
+            if (userName == null)
+            {
+                Console.WriteLine("No user name provided. Exiting.");
+                return;
+            }
 
             // Print a welcome message to the user
             Console.WriteLine($"Welcome to the chat, {userName}!");
@@ -178,6 +194,41 @@ namespace MikuMemories
             }
             
         }
+
+        static async Task<string> GetUserName(CancellationToken cancellationToken)
+        {
+            StringBuilder inputBuilder = new StringBuilder();
+            Console.Write("Please enter your name: ");
+
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                if (Console.KeyAvailable)
+                {
+                    ConsoleKeyInfo keyInfo = Console.ReadKey();
+
+                    if (keyInfo.Key == ConsoleKey.Enter)
+                    {
+                        string input = inputBuilder.ToString();
+
+                        if (!string.IsNullOrEmpty(input))
+                        {
+                            return input;
+                        }
+                    }
+                    else
+                    {
+                        inputBuilder.Append(keyInfo.KeyChar);
+                    }
+                }
+
+                await Task.Delay(100); // Add a small delay to prevent high CPU usage
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            return null;
+        }
+
+
 
         // Event handler for application exit
         private static void OnProcessExit(object sender, EventArgs e)
