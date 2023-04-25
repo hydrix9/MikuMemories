@@ -159,9 +159,9 @@ namespace MikuMemories
             Task.Run(LlmApi.instance.TryProcessQueue);
 
 
-            characterName = characterCard.char_name;
+            characterName = characterCard.name;
 
-            Console.WriteLine($"{characterCard.char_name} has entered the chat.");
+            Console.WriteLine($"{characterCard.name} has entered the chat.");
 
 
             //TODO: create a more broad character that can develop and is stored in the database rather than the character card
@@ -183,6 +183,8 @@ namespace MikuMemories
 
             try
             {
+                var input = Console.ReadLine();
+
                 // Execute the main logic of your program here
                 while (!cts.Token.IsCancellationRequested)
                 {
@@ -381,7 +383,6 @@ namespace MikuMemories
             var responsesCollection = Mongo.instance.GetResponsesCollection(userName);
 
             // Get user input and append it to recentResponses.
-            Console.Write($"{userName}: ");
 
             if (Console.KeyAvailable)
             {
