@@ -70,13 +70,13 @@ namespace MikuMemories
             return collection;
         }
 
-        public async Task<List<IMongoCollection<BsonDocument>>> GetCharacterResponseCollections()
+        public async Task<List<IMongoCollection<Response>>> GetCharacterResponseCollections()
         {
             var databaseNamesCursor = await _client.ListDatabaseNamesAsync();
             var databaseNames = await databaseNamesCursor.ToListAsync();
             var characterDatabases = databaseNames.Where(dbName => dbName.StartsWith("user_"));
 
-            var characterResponseCollections = new List<IMongoCollection<BsonDocument>>();
+            var characterResponseCollections = new List<IMongoCollection<Response>>();
 
             foreach (var dbName in characterDatabases)
             {
@@ -85,7 +85,7 @@ namespace MikuMemories
 
                 if (collectionExists)
                 {
-                    var collection = database.GetCollection<BsonDocument>(responseCollection);
+                    var collection = database.GetCollection<Response>(responseCollection);
                     characterResponseCollections.Add(collection);
                 }
             }

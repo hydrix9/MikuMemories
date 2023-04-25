@@ -299,7 +299,7 @@ namespace MikuMemories
             }
         }
 
-        private static async Task<string> CompileRecentResponsesAsync(IMongoCollection<Response> responsesCollection, int n)
+        private static async Task<string> CompileRecentResponsesAsync_Single(IMongoCollection<Response> responsesCollection, int n)
         {
             var recentResponses = await responsesCollection.Find(_ => true)
                 .Sort("{Timestamp: -1}")
@@ -317,6 +317,32 @@ namespace MikuMemories
 
             return contextBuilder.ToString();
         }
+
+        public static async Task<string> CompileRecentResponsesAsync_All(List<IMongoCollection<Response>> responseCollections, int n)
+        {
+            var recentResponses = new List<Response>();
+
+            foreach (var collection in responseCollections)
+            {
+                var responses = await collection.Find(FilterDefinition<Response>.Empty)
+                    .Sort(Builders<Response>.Sort.Descending(r => r.Timestamp))
+                    .Limit(n)
+                    .ToListAsync();
+                recentResponses.AddRange(responses);
+            }
+
+            recentResponses = recentResponses.OrderByDescending(r => r.Timestamp).ToList();
+
+            StringBuilder sb = new StringBuilder();
+            foreach (var response in recentResponses)
+            {
+                sb.AppendLine($"{response.UserName}: {response.Text}");
+            }
+
+            return sb.ToString();
+        }
+
+
 
         private static async Task<IEnumerable<Summary>> GetSummaries()
         {
@@ -483,15 +509,15 @@ namespace MikuMemories
 
 
                 // Get responses collection and recent responses.
-                //GetCharacterResponseCollections
-                var responsesCollection = Mongo.instance.GetResponsesCollection(userName);
+                //var responsesCollection = Mongo.instance.GetResponsesCollection(userName);
 
+                var characterResponseCollections = await Mongo.instance.GetCharacterResponseCollections();
                 string recentResponses = "";
 
                 if(logInputSteps) Console.WriteLine("Starting CompileRecentResponsesAsync...");
                 try
                 {
-                    var compileRecentResponsesTask = CompileRecentResponsesAsync(responsesCollection, int.Parse(Config.GetValue("numRecentResponses")));
+                    var compileRecentResponsesTask = CompileRecentResponsesAsync_All(characterResponseCollections, int.Parse(Config.GetValue("numRecentResponses")));
                     if (await Task.WhenAny(compileRecentResponsesTask, Task.Delay(timeoutMs)) == compileRecentResponsesTask)
                     {
                         recentResponses = await compileRecentResponsesTask;
