@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using System.Threading.Channels;
 
 namespace MikuMemories
 {
@@ -15,37 +16,41 @@ namespace MikuMemories
         public LlmApi()
         {
             instance = this;
+            requestQueue = Channel.CreateBounded<LLmApiRequest>(new BoundedChannelOptions(100) { SingleReader = true });
+
         }
 
-        private BlockingCollection<LLmApiRequest> requestQueue = new BlockingCollection<LLmApiRequest>();
+        private static Channel<LLmApiRequest> requestQueue;
 
         public static void QueueRequest(LLmApiRequest request)
         {
-
-            instance.requestQueue.Add(request);
-            Console.WriteLine("Request added to queue. Queue size: " + instance.requestQueue.Count);
+            if (requestQueue.Writer.TryWrite(request))
+            {
+                if(Program.logInputSteps) Console.WriteLine("Request added to queue. Queue size: " + requestQueue.Reader.Count);
+            }
+            else
+            {
+                Console.WriteLine("Failed to add request to queue.");
+            }
         }
+
 
         public async Task TryProcessQueue()
         {
-            Console.WriteLine("TryProcessQueue started.");
-
-            while (true)
-            {
                 try {
-                    if (requestQueue.Count > 0)
+
+                    if (requestQueue.Reader.TryRead(out var request))
                     {
 
-                        //take from bottom of stack and process
-                        LLmApiRequest request = requestQueue.Take();
-
-                        Console.WriteLine("sending request: \n" + request.AsString());
+                        if(Program.logInputSteps) Console.WriteLine("sending request: \n" + request.AsString());
+                        
                         string jsonResponse = await RestApi.PostRequest(Config.GetValue("llmsrv"), request.AsString());
                         JObject parsedResponse = JObject.Parse(jsonResponse);
                         JArray data = (JArray)parsedResponse["data"];
                         string response = data[0].ToString();
 
-                        Console.WriteLine(response);
+                        if(Program.logInputSteps) Console.WriteLine(response);
+                        if(Program.logInputSteps) Console.WriteLine("(end response)");
 
                         // Split the LLM response into lines and get the last non-empty line
                         var lines = response.Split('\n').Select(x => x.Trim()).Where(x => !string.IsNullOrEmpty(x)).ToList();
@@ -74,23 +79,19 @@ namespace MikuMemories
 
                         // Insert the LLM's response into the database.
                         await Program.InsertResponseAsync(Mongo.instance.GetResponsesCollection(sender), res);
+                        
+                        Console.WriteLine(lastLine); //append the character's response to chat
 
                         //create AI's viewpoint summary of the events
                         await Program.TrySummarize();
-
                         request.callback?.Invoke(response); //do whatever with response
 
                     }
-
-                    await Task.Delay(TimeSpan.FromMilliseconds(5));
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine("Error in TryProcessQueue: " + ex.Message);
-                }
-            } //end while
-
-            Console.WriteLine("TryProcessQueue ended.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error in TryProcessQueue: " + ex.Message);
+            }
 
         } //end func TryProcessQueue
 

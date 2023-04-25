@@ -33,8 +33,16 @@ namespace MikuMemories
         public static string characterName;
         public static CharacterCard characterCard;
 
+        public static bool logInputSteps = false;
+
         static async Task Main(string[] args)
         { 
+
+            string logFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "debug_log.log");
+            var dualWriter = new DualWriter(logFilePath);
+            Console.SetOut(dualWriter);
+            Console.SetError(dualWriter);
+
             new Config(); //create instance
             new Mongo(); //create instance
             new LlmApi(); //create instance
@@ -125,7 +133,7 @@ namespace MikuMemories
             // Prompt the user to enter their name
             Console.WriteLine("Welcome to MikuMemories!");
 
-            Console.WriteLine(" Enabling chat interface");
+            Console.WriteLine("Enabling chat interface");
 
             Chat(cts);
         }
@@ -154,7 +162,9 @@ namespace MikuMemories
 
 
             //run queue loop for LLM operations
-            Task.Run(() => LlmApi.instance.TryProcessQueue());
+            var timer = new System.Timers.Timer(5); // Set the interval to 5ms
+            timer.Elapsed += async (sender, e) => await LlmApi.instance.TryProcessQueue();
+            timer.Start();
 
 
             characterName = characterCard.name;
@@ -177,6 +187,7 @@ namespace MikuMemories
             catch (OperationCanceledException)
             {
                 Console.WriteLine("Shutting down gracefully...");
+                timer.Stop();
             }
 
             try
@@ -198,6 +209,7 @@ namespace MikuMemories
             finally
             {
                 Console.WriteLine("Shutting down gracefully...");
+                timer.Stop();
             }
             
         }
@@ -252,7 +264,7 @@ namespace MikuMemories
 
         public static async Task InsertResponseAsync(IMongoCollection<Response> collection, Response response)
         {
-            Console.WriteLine("InsertResponseAsync: Trying to insert the user response...");
+            if(logInputSteps) Console.WriteLine("InsertResponseAsync: Trying to insert the user response...");
 
             try
             {
@@ -262,7 +274,7 @@ namespace MikuMemories
                 if (await Task.WhenAny(insertTask, Task.Delay(timeoutMs)) == insertTask)
                 {
                     await insertTask;
-                    Console.WriteLine("InsertResponseAsync: User response inserted.");
+                    if(logInputSteps) Console.WriteLine("InsertResponseAsync: User response inserted.");
                 }
                 else
                 {
@@ -313,7 +325,7 @@ namespace MikuMemories
                 }
                 else
                 {
-                    Console.WriteLine($"No summaries found for length {length}");
+                    if(logInputSteps) Console.WriteLine($"No summaries found for length {length}");
                 }
             }
 
@@ -323,19 +335,6 @@ namespace MikuMemories
         private static string CompileFullContext(string baseContext, string recentResponses, string summaries)
         {
             StringBuilder sb = new StringBuilder();
-
-
-/*
-        Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
-
-        ### Instruction:
-        {instruction}
-
-        ### Input:
-        {input}
-
-        ### Response:
-*/
 
             sb.AppendLine("Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.");
             sb.AppendLine("### Instruction:");
@@ -446,14 +445,14 @@ namespace MikuMemories
 
                 string recentResponses = "";
 
-                Console.WriteLine("Starting InsertResponseAsync...");
+                if(logInputSteps) Console.WriteLine("Starting InsertResponseAsync...");
                 try
                 {
                     var insertResponseTask = InsertResponseAsync(responsesCollection, userResponse);
                     if (await Task.WhenAny(insertResponseTask, Task.Delay(timeoutMs)) == insertResponseTask)
                     {
                         await insertResponseTask;
-                        Console.WriteLine("InsertResponseAsync completed.");
+                        if(logInputSteps) Console.WriteLine("InsertResponseAsync completed.");
                     }
                     else
                     {
@@ -465,14 +464,14 @@ namespace MikuMemories
                     Console.WriteLine("Error in InsertResponseAsync: " + ex.Message);
                 }
 
-                Console.WriteLine("Starting CompileRecentResponsesAsync...");
+                if(logInputSteps) Console.WriteLine("Starting CompileRecentResponsesAsync...");
                 try
                 {
                     var compileRecentResponsesTask = CompileRecentResponsesAsync(responsesCollection, int.Parse(Config.GetValue("numRecentResponses")));
                     if (await Task.WhenAny(compileRecentResponsesTask, Task.Delay(timeoutMs)) == compileRecentResponsesTask)
                     {
                         recentResponses = await compileRecentResponsesTask;
-                        Console.WriteLine("CompileRecentResponsesAsync completed.");
+                        if(logInputSteps) Console.WriteLine("CompileRecentResponsesAsync completed.");
                     }
                     else
                     {
@@ -484,27 +483,30 @@ namespace MikuMemories
                     Console.WriteLine("Error in CompileRecentResponsesAsync: " + ex.Message);
                 }
 
-                Console.WriteLine("Starting GetSummaries...");
+                if(logInputSteps) Console.WriteLine("Starting GetSummaries...");
+
                 try
                 {
                     var getSummariesTask = GetSummaries();
+                    string fullContext = "";
                     if (await Task.WhenAny(getSummariesTask, Task.Delay(timeoutMs)) == getSummariesTask)
                     {
                         IEnumerable<Summary> summariesRaw = await getSummariesTask;
                         string summaries = string.Join(Environment.NewLine, summariesRaw.Select(entry => entry.Text));
 
                         // Get the compiled responses.
-                        string fullContext = CompileFullContext(startingContext, recentResponses, summaries);
+                        fullContext = CompileFullContext(startingContext, recentResponses, summaries);
 
-                        ///add request to be sent later in a queue
-                        LlmApi.QueueRequest(new LLmApiRequest(fullContext, LlmInputParams.defaultParams));
-
-                        Console.WriteLine("GetSummaries completed.");
+                        if(logInputSteps) Console.WriteLine("GetSummaries completed.");
                     }
                     else
                     {
                         Console.WriteLine("GetSummaries timed out.");
                     }
+
+                    ///add request to be sent later in a queue
+                    LlmApi.QueueRequest(new LLmApiRequest(fullContext, LlmInputParams.defaultParams));
+                    
                 }
                 catch (Exception ex)
                 {

@@ -52,4 +52,5 @@ namespace MikuMemories
         }
 
     } //end class tools
+
 }
