@@ -125,7 +125,6 @@ namespace MikuMemories
             Console.WriteLine("Welcome to MikuMemories!");
 
             Console.WriteLine(" Enabling chat interface");
-            Console.Write("Please enter your name: ");
 
             string userName = null;
             try
@@ -197,36 +196,26 @@ namespace MikuMemories
 
         static async Task<string> GetUserName(CancellationToken cancellationToken)
         {
-            StringBuilder inputBuilder = new StringBuilder();
             Console.Write("Please enter your name: ");
 
-            while (!cancellationToken.IsCancellationRequested)
+            string input = null;
+            var inputTask = Task.Run(() =>
             {
-                if (Console.KeyAvailable)
-                {
-                    ConsoleKeyInfo keyInfo = Console.ReadKey();
+                input = Console.ReadLine();
+            });
 
-                    if (keyInfo.Key == ConsoleKey.Enter)
-                    {
-                        string input = inputBuilder.ToString();
-
-                        if (!string.IsNullOrEmpty(input))
-                        {
-                            return input;
-                        }
-                    }
-                    else
-                    {
-                        inputBuilder.Append(keyInfo.KeyChar);
-                    }
-                }
-
-                await Task.Delay(100); // Add a small delay to prevent high CPU usage
+            var completedTask = await Task.WhenAny(inputTask, Task.Delay(Timeout.Infinite, cancellationToken));
+            if (completedTask == inputTask)
+            {
+                return input;
             }
-
-            cancellationToken.ThrowIfCancellationRequested();
-            return null;
+            else
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return null;
+            }
         }
+
 
 
 
