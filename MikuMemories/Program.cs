@@ -158,8 +158,6 @@ namespace MikuMemories
             llmApi_timer.Start();
             
 
-
-
             //timer.Stop(); ///not sure where to put this...
 
         }
@@ -274,14 +272,6 @@ namespace MikuMemories
         {
             PythonEngine.Shutdown();
             Environment.Exit(0);
-        }
-
-        public static async Task<List<Response>> GetRecentResponsesAsync(IMongoCollection<Response> collection, int responseLimit)
-        {
-            return await collection.Find(_ => true)
-                .SortByDescending(r => r.Timestamp)
-                .Limit(responseLimit)
-                .ToListAsync();
         }
 
         public static async Task InsertResponseAsync(IMongoCollection<Response> collection, Response response)
@@ -527,6 +517,9 @@ namespace MikuMemories
             }
 
             try {
+                if (LlmApi.IsResponseRequestBeingProcessed) {
+                    return;
+                }
 
                 //don't do anything if we've already sent a request to get our response 
                 if(LlmApi.requestQueue.Any(entry => entry.type == LLmApiRequest.Type.Response && entry.author == characterName)) {
@@ -598,9 +591,16 @@ namespace MikuMemories
                         Console.WriteLine("GetSummaries timed out.");
                     }
 
-                    ///add request to be sent later in a queue
-                    LlmApi.QueueRequest(new LLmApiRequest(fullContext, LlmInputParams.defaultParams, LLmApiRequest.Type.Response, characterName));
+                    // Set the flag to indicate that a response request is being processed
+                    LlmApi.IsResponseRequestBeingProcessed = true;
+
+                    // Add request to be sent later in a queue
+                    var request = new LLmApiRequest(fullContext, LlmInputParams.defaultParams, LLmApiRequest.Type.Response, characterName);
+                    LlmApi.QueueRequest(request);
                     
+                    // Wait for the request to be processed
+                    await request.RequestProcessed.Task;
+
                 }
                 catch (Exception ex)
                 {

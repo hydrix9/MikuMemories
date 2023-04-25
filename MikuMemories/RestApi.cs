@@ -8,12 +8,14 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Threading;
 
 namespace MikuMemories
 {
     public class RestApi
     {
-            
+        private static SemaphoreSlim _postRequestSemaphore = new SemaphoreSlim(1, 1);
+
         public static async Task<string> PostRequest(string url, string json)
         {
             using var httpClient = new HttpClient();
@@ -24,6 +26,8 @@ namespace MikuMemories
 
             HttpResponseMessage response;
 
+            await _postRequestSemaphore.WaitAsync(); // Acquire the semaphore
+
             try
             {
                 response = await httpClient.PostAsync(url, content);
@@ -31,8 +35,11 @@ namespace MikuMemories
             catch (HttpRequestException e)
             {
                 Console.WriteLine($"Error: {e.Message}");
+                _postRequestSemaphore.Release(); // Release the semaphore
                 return null;
             }
+
+            _postRequestSemaphore.Release(); // Release the semaphore
 
             if (response.IsSuccessStatusCode)
             {

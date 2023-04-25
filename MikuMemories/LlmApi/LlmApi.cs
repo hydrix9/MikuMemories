@@ -6,12 +6,15 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
 using System.Threading.Channels;
+using System.Threading;
 
 namespace MikuMemories
 {
     public class LlmApi
     {
         public static LlmApi instance;
+
+        public static bool IsResponseRequestBeingProcessed { get; set; } = false;
 
         public LlmApi()
         {
@@ -28,18 +31,44 @@ namespace MikuMemories
 
         }
 
+        private static SemaphoreSlim tpq_functionLock = new SemaphoreSlim(1, 1);
 
         public async Task TryProcessQueue()
         {
-                try {
-                    if(requestQueue.Count > 0) {
-                        LLmApiRequest request = requestQueue[0];
+            if (!await tpq_functionLock.WaitAsync(0)) {
+                // If the function is already running, exit immediately.
+                return;
+            }
+            try {
+                if(requestQueue.Count > 0) {
+                    LLmApiRequest request = requestQueue[0];
 
-                        if(Program.logInputSteps) Console.WriteLine("sending request: \n" + request.AsString());
-                        
-                        string jsonResponse = await RestApi.PostRequest(Config.GetValue("llmsrv"), request.AsString());
-                        JObject parsedResponse = JObject.Parse(jsonResponse);
-                        JArray data = (JArray)parsedResponse["data"];
+                    if(Program.logInputSteps) Console.WriteLine("sending request: \n" + request.AsString());
+                    
+                    string jsonResponse = await RestApi.PostRequest(Config.GetValue("llmsrv"), request.AsString());
+                    JObject parsedResponse = JObject.Parse(jsonResponse);
+
+                    await ProcessPostResponse(request, parsedResponse);
+                    
+                    // Reset the flag to indicate that the response request has been processed
+                    LlmApi.IsResponseRequestBeingProcessed = false;
+
+
+                    request.RequestProcessed.SetResult(true);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error in TryProcessQueue: " + ex.Message);
+            } finally {
+                tpq_functionLock.Release();
+            }
+
+        } //end func TryProcessQueue
+
+
+        async Task ProcessPostResponse(LLmApiRequest request, JObject jresponse) {
+                       JArray data = (JArray)jresponse["data"];
                         string response = data[0].ToString();
 
                         if(Program.logInputSteps) Console.WriteLine(response);
@@ -85,15 +114,7 @@ namespace MikuMemories
                         //create AI's viewpoint summary of the events
                         await Program.TrySummarize();
                         request.callback?.Invoke(response); //do whatever with response
-                    }
-                }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error in TryProcessQueue: " + ex.Message);
-            }
-
-        } //end func TryProcessQueue
-
+        }
 
     }
 }
