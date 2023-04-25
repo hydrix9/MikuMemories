@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
+using System.Diagnostics;
 
 namespace MikuMemories
 {
@@ -64,9 +65,9 @@ namespace MikuMemories
         }
         public IMongoCollection<Summary> GetSummariesCollection(string userName)
         {
-
             var database = _client.GetDatabase(FormatUserName(userName));
             var collection = database.GetCollection<Summary>(summariesCollection);
+
             return collection;
         }
 
@@ -151,6 +152,11 @@ namespace MikuMemories
 
         public static string FormatUserName(string username)
         {
+            if(string.IsNullOrEmpty(username) || username == "") {
+                StackTrace trace = new StackTrace();
+                Console.WriteLine(trace.ToString());
+                throw new ArgumentException("blank username supplied");
+            }
             string returns = username.Replace(".", "");
 
             if (string.IsNullOrEmpty(returns) || returns.Contains('\0'))
@@ -158,6 +164,33 @@ namespace MikuMemories
                 throw new ArgumentException("Invalid userName value.", nameof(returns));
             }
             return returns;
+        }
+
+        public static async Task<Response> GetLatestResponseFromAllAsync()
+        {
+            var responseCollections = await instance.GetCharacterResponseCollections();
+
+            Response latestResponse = null;
+
+            foreach (var collection in responseCollections)
+            {
+                var response = await collection.Find(FilterDefinition<Response>.Empty)
+                    .Sort(Builders<Response>.Sort.Descending(r => r.Timestamp))
+                    .Limit(1)
+                    .FirstOrDefaultAsync();
+
+                if (response != null && (latestResponse == null || response.Timestamp > latestResponse.Timestamp))
+                {
+                    latestResponse = response;
+                }
+            }
+
+            if (latestResponse != null)
+            {
+                return latestResponse;
+            }
+
+            return null;
         }
 
 

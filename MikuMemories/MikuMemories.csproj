@@ -15,7 +15,8 @@
       <HintPath>path_to_your_Python.Runtime.dll</HintPath>
     </Reference>
     <PackageReference Include="pythonnet" Version="3.0.1" />
-  
+    <PackageReference Include="System.Linq.Async" Version="6.0.1" />
+
   </ItemGroup>
   <ItemGroup>
     <None Include="TavernAiWrapper\tavernaiWrapper.js" CopyToOutputDirectory="PreserveNewest" />

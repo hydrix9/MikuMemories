@@ -11,6 +11,14 @@ namespace MikuMemories
 
     public class LLmApiRequest
     {
+
+        //my custom "enum"
+        public class Type {
+            public static readonly string 
+                Response = "Request"
+            ;
+        }
+
         public LlmInputParams @params;
         [JsonIgnore]
         public string prompt;
@@ -21,11 +29,20 @@ namespace MikuMemories
         public delegate void Callback<T>(T obj);
         [JsonIgnore]
         public Callback<string> callback;
+        
+        [JsonIgnore]
+        public string type;
 
-        public LLmApiRequest(string prompt, LlmInputParams @params, Callback<string> callback = null)
+        [JsonIgnore]
+        public string author;
+
+
+        public LLmApiRequest(string prompt, LlmInputParams @params, string type, string author, Callback<string> callback = null)
         {
             this.prompt = prompt;
             this.@params = @params;
+            this.type = type;
+            this.author = author;
             request_id = generateID();
             this.callback = callback;
         }

@@ -2,6 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Channels;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -33,7 +35,7 @@ namespace MikuMemories
         public static string characterName;
         public static CharacterCard characterCard;
 
-        public static bool logInputSteps = false;
+        public static bool logInputSteps = true;
 
         // Set a timeout in milliseconds for mongo 
         const int timeoutMs = 5000; 
@@ -41,6 +43,7 @@ namespace MikuMemories
 
         static async Task Main(string[] args)
         { 
+            TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
 
             string logFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "debug_log.log");
             var dualWriter = new DualWriter(logFilePath);
@@ -123,6 +126,7 @@ namespace MikuMemories
                 throw new Exception("Please provide a file path, either as the first non-flag argument or following the --character flag.");
             }
 
+            characterName = characterCard.name;
 
             /*
             var request = new LLmApiRequest(LlmInputParams.defaultParams);
@@ -141,16 +145,33 @@ namespace MikuMemories
 
             Chat(cts);
 
+            //run queue loop for LLM operations
+            var rdrtr_timer = new System.Timers.Timer(5); // Set the interval to 5ms
+            string startingContext = GenerateContext(characterCard, true);
+            rdrtr_timer.Elapsed += async (sender, e) => await ReadDatabaseResponsesTryRespond(startingContext);
+            rdrtr_timer.Start();
+
 
             //run queue loop for LLM operations
-            var timer = new System.Timers.Timer(5); // Set the interval to 5ms
-            string startingContext = GenerateContext(characterCard, true);
-            timer.Elapsed += async (sender, e) => await ReadDatabaseResponsesTryRespond(startingContext);
-            timer.Start();
+            var llmApi_timer = new System.Timers.Timer(5); // Set the interval to 5ms
+            llmApi_timer.Elapsed += async (sender, e) => await LlmApi.instance.TryProcessQueue();
+            llmApi_timer.Start();
+            
+
 
 
             //timer.Stop(); ///not sure where to put this...
 
+        }
+
+        //show error when async method fails
+        private static void TaskScheduler_UnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
+        {
+            Console.WriteLine("Unhandled exception in async method:");
+            Console.WriteLine(e.Exception);
+            Console.WriteLine("exiting environment");
+            Environment.Exit(0); // exit the process with exit code 0
+            //e.SetObserved(false); // Allow the exception to propagate and crash the application
         }
 
         private static async void Chat(CancellationTokenSource cts) {
@@ -175,15 +196,6 @@ namespace MikuMemories
             // Print a welcome message to the user
             Console.WriteLine($"Welcome to the chat, {userName}!");
 
-
-            //run queue loop for LLM operations
-            var timer = new System.Timers.Timer(5); // Set the interval to 5ms
-            timer.Elapsed += async (sender, e) => await LlmApi.instance.TryProcessQueue();
-            timer.Start();
-
-
-            characterName = characterCard.name;
-
             Console.WriteLine($"{characterCard.name} has entered the chat.");
 
 
@@ -198,8 +210,7 @@ namespace MikuMemories
             }
             catch (OperationCanceledException)
             {
-                Console.WriteLine("Shutting down gracefully...");
-                timer.Stop();
+
             }
 
             try
@@ -220,8 +231,7 @@ namespace MikuMemories
             }
             finally
             {
-                Console.WriteLine("Shutting down gracefully...");
-                timer.Stop();
+
             }
             
         }
@@ -346,29 +356,40 @@ namespace MikuMemories
 
         private static async Task<IEnumerable<Summary>> GetSummaries()
         {
-            int[] summaryLengths = Config.GetSummaryLengths();
-            var collection = Mongo.instance.GetSummariesCollection(characterName);
-            var filterBuilder = Builders<Summary>.Filter;
-
-            var summaries = new List<Summary>();
-
-            foreach (int length in summaryLengths)
+            try
             {
-                var filter = filterBuilder.Eq("SummaryLength", length);
-                var latestSummary = await collection.Find(filter).SortByDescending(s => s.Timestamp).FirstOrDefaultAsync();
+                int[] summaryLengths = Config.GetSummaryLengths();
+                var collection = Mongo.instance.GetSummariesCollection(characterName);
 
-                if (latestSummary != null)
+                var filterBuilder = Builders<Summary>.Filter;
+
+                var summaries = new List<Summary>();
+
+                foreach (int length in summaryLengths)
                 {
-                    summaries.Add(latestSummary);
+                    var filter = filterBuilder.Eq("SummaryLength", length);
+
+                    var latestSummary = await collection.Find(filter).SortByDescending(s => s.Timestamp).FirstOrDefaultAsync();
+
+                    if (latestSummary != null)
+                    {
+                        summaries.Add(latestSummary);
+                    }
+                    else
+                    {
+                        if(logInputSteps) Console.WriteLine($"No summaries found for length {length}");
+                    }
                 }
-                else
-                {
-                    if(logInputSteps) Console.WriteLine($"No summaries found for length {length}");
-                }
+
+                return summaries;
             }
-
-            return summaries;
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error in GetSummaries(): " + ex.Message);
+                return new List<Summary>(); // Return an empty list instead of a null value
+            }
         }
+
 
         private static string CompileFullContext(string baseContext, string recentResponses, string summaries)
         {
@@ -492,15 +513,28 @@ namespace MikuMemories
 
                 } catch (Exception ex)
                 {
-                    Console.WriteLine("Error in CompileRecentResponsesAsync: " + ex.Message);
+                    Console.WriteLine("Error in ProcessUserInput: " + ex.Message);
                 }
             }
-            
-       
         }
 
+        private static SemaphoreSlim rdrtr_functionLock = new SemaphoreSlim(1, 1);
+
         private static async Task ReadDatabaseResponsesTryRespond(string startingContext = null) {
-            
+            if (!await rdrtr_functionLock.WaitAsync(0)) {
+                // If the function is already running, exit immediately.
+                return;
+            }
+
+            try {
+
+                //don't do anything if we've already sent a request to get our response 
+                if(LlmApi.requestQueue.Any(entry => entry.type == LLmApiRequest.Type.Response && entry.author == characterName)) {
+                    Console.WriteLine("current queue: " +  LlmApi.requestQueue.Count);
+                    return;
+                }
+
+
                 // Generate continuingContext if startingContext is not specified
                 if (startingContext == null)
                 {
@@ -511,12 +545,18 @@ namespace MikuMemories
                 // Get responses collection and recent responses.
                 //var responsesCollection = Mongo.instance.GetResponsesCollection(userName);
 
-                var characterResponseCollections = await Mongo.instance.GetCharacterResponseCollections();
                 string recentResponses = "";
+
+                Response latestResponse = await Mongo.GetLatestResponseFromAllAsync();
+                //if the response is from our character, nothing to do, waiting for others to respond
+                if(latestResponse != null  && latestResponse.UserName == characterName) {
+                    return;
+                }
 
                 if(logInputSteps) Console.WriteLine("Starting CompileRecentResponsesAsync...");
                 try
                 {
+                    var characterResponseCollections = await Mongo.instance.GetCharacterResponseCollections();
                     var compileRecentResponsesTask = CompileRecentResponsesAsync_All(characterResponseCollections, int.Parse(Config.GetValue("numRecentResponses")));
                     if (await Task.WhenAny(compileRecentResponsesTask, Task.Delay(timeoutMs)) == compileRecentResponsesTask)
                     {
@@ -537,11 +577,15 @@ namespace MikuMemories
 
                 try
                 {
+
                     var getSummariesTask = GetSummaries();
                     string fullContext = "";
+                    
                     if (await Task.WhenAny(getSummariesTask, Task.Delay(timeoutMs)) == getSummariesTask)
                     {
+
                         IEnumerable<Summary> summariesRaw = await getSummariesTask;
+
                         string summaries = string.Join(Environment.NewLine, summariesRaw.Select(entry => entry.Text));
 
                         // Get the compiled responses.
@@ -555,13 +599,20 @@ namespace MikuMemories
                     }
 
                     ///add request to be sent later in a queue
-                    LlmApi.QueueRequest(new LLmApiRequest(fullContext, LlmInputParams.defaultParams));
+                    LlmApi.QueueRequest(new LLmApiRequest(fullContext, LlmInputParams.defaultParams, LLmApiRequest.Type.Response, characterName));
                     
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine("Error in GetSummaries or QueueRequest: " + ex.Message);
                 }
+            } catch(Exception ex) {
+                Console.WriteLine("Error in ReadDatabaseResponsesTryRespond: " + ex.Message);
+            }
+            finally {
+                    // Release the lock.
+                    rdrtr_functionLock.Release();
+            }
         }
 
     } //end class Main

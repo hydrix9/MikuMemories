@@ -66,10 +66,19 @@ namespace MikuMemories
             // If the file is not found in both locations, return null
             return null;
         }
-
+        
         public static int[] GetSummaryLengths()
         {
-            return jObject.GetValue("summariesLengths").ToObject<int[]>();
+            try
+            {
+                var lengths = jObject.GetValue("summariesLengths");
+                return lengths.ToObject<int[]>();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error in GetSummaryLengths: " + ex.Message);
+                throw; // Re-throw the exception so it can be caught and handled by the calling code
+            }
         }
 
     } //end class config

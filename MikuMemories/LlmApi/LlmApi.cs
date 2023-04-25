@@ -16,31 +16,24 @@ namespace MikuMemories
         public LlmApi()
         {
             instance = this;
-            requestQueue = Channel.CreateBounded<LLmApiRequest>(new BoundedChannelOptions(100) { SingleReader = true });
 
         }
 
-        private static Channel<LLmApiRequest> requestQueue;
+        public static List<LLmApiRequest> requestQueue = new List<LLmApiRequest>();
 
         public static void QueueRequest(LLmApiRequest request)
         {
-            if (requestQueue.Writer.TryWrite(request))
-            {
-                if(Program.logInputSteps) Console.WriteLine("Request added to queue. Queue size: " + requestQueue.Reader.Count);
-            }
-            else
-            {
-                Console.WriteLine("Failed to add request to queue.");
-            }
+            requestQueue.Add(request);
+            if(Program.logInputSteps) Console.WriteLine("Request added to queue. Queue size: " + requestQueue.Count);
+
         }
 
 
         public async Task TryProcessQueue()
         {
                 try {
-
-                    if (requestQueue.Reader.TryRead(out var request))
-                    {
+                    if(requestQueue.Count > 0) {
+                        LLmApiRequest request = requestQueue[0];
 
                         if(Program.logInputSteps) Console.WriteLine("sending request: \n" + request.AsString());
                         
@@ -82,12 +75,18 @@ namespace MikuMemories
                         
                         Console.WriteLine(lastLine); //append the character's response to chat
 
+                        /*
+                         don't want to do this immediately, otherwise it'll keep creating requests of the same type
+                         and removing them, so they pile up on server
+                         hopefully this isn't going to be an intended behavior in the future
+                         */
+                        requestQueue.Remove(request);
+
                         //create AI's viewpoint summary of the events
                         await Program.TrySummarize();
                         request.callback?.Invoke(response); //do whatever with response
-
                     }
-            }
+                }
             catch (Exception ex)
             {
                 Console.WriteLine("Error in TryProcessQueue: " + ex.Message);
