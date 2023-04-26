@@ -30,8 +30,6 @@ namespace MikuMemories
 
         */
 
-
-        
         public static string characterName;
         public static CharacterCard characterCard;
 
@@ -369,12 +367,15 @@ namespace MikuMemories
         {
             StringBuilder sb = new StringBuilder();
 
-            sb.AppendLine($"In the conversation below, continue the dialogue by generating the next line for the character {characterName} Your response should be creative, reflect {characterName}'s personality and speech quirks, and be prefixed with {characterName}. ");
+            sb.AppendLine($"Continue the dialogue below by generating the next line for the character {characterName}. Your response should reflect {characterName}'s personality and speech quirks while considering the context of the conversation. Be sure to prefix the response with \"{characterName}:\" (e.g., \"{characterName}: Hello!\") Feel free to include actions or reactions to make the response more engaging.");
             sb.AppendLine(baseContext);
             sb.AppendLine(); // Adds an extra newline
             sb.AppendLine("### Conversation So Far:");
             sb.AppendLine(recentResponses);
             sb.AppendLine(); // Adds an extra newline
+            sb.AppendLine("### Note:");
+            sb.AppendLine("In your response, you may incorporate actions or reactions (e.g., *moves closer to you*, *blushes*, *spins around while singing*) to make the dialogue more engaging and dynamic.");
+            sb.AppendLine(); // Adds an extra newline            
             if(summaries.Length > 0) {
                 sb.AppendLine("### Summaries of Previous Conversation and Events:");
                 sb.AppendLine(summaries);
@@ -388,34 +389,56 @@ namespace MikuMemories
         public static async Task TrySummarize()
         {
             try {
-            var mongo = Mongo.instance;
-            int[] summaryLengths = Config.GetSummaryLengths();
+                var mongo = Mongo.instance;
+                int[] summaryLengths = Config.GetSummaryLengths();
 
-            foreach (int length in summaryLengths)
-            {
-                var latestSummary = await Mongo.instance.GetLatestSummary(characterName, length);
-                bool shouldGenerateSummary = false;
-
-                if (latestSummary != null)
+                foreach (int length in summaryLengths)
                 {
-                    var messagesSinceLastSummary = await mongo.GetLatestMessages(characterName, length);
-                    shouldGenerateSummary = messagesSinceLastSummary.Count >= length;
-                }
-                else
-                {
-                    shouldGenerateSummary = true;
-                }
 
-                if (shouldGenerateSummary)
-                {
-                    var latestMessages = await mongo.GetLatestMessagesFromUserResponses(length);
+                    var latestSummary = await Mongo.instance.GetLatestSummary(characterName, length);
+                    var latestResponses = await Mongo.instance.GetLatestMessagesFromUserResponses(length);
+                    
+                    int messagesSinceLastSummary;
 
-                    string summaryText = PythonInterop.GenerateSummary(string.Join(Environment.NewLine, latestMessages), Tools.CalculateSummaryRatio(length));
+                    //either find number since last summary or simply use the number of last messages
+                    if(latestSummary != null) 
+                        messagesSinceLastSummary = latestResponses.Count(r => r.Timestamp > latestSummary.Timestamp);
+                    else
+                        messagesSinceLastSummary = latestResponses.Count;
 
-                    var summary = new Summary { SummaryLength = length, Text = summaryText, Timestamp = DateTime.UtcNow };
-                    await mongo.GetSummariesCollection(characterName).InsertOneAsync(summary);
+                    bool shouldGenerateSummary = true;
+                    if (latestSummary != null)
+                    {
+
+                        if (messagesSinceLastSummary >= length)
+                        {
+                            shouldGenerateSummary = true;
+                        }
+                    } else {
+                        //latest summary of length doesn't exist
+                        if(messagesSinceLastSummary >= length)
+                            shouldGenerateSummary = true;
+
+                    }
+
+                    if (shouldGenerateSummary)
+                    {
+                        var latestMessagesRaw = await mongo.GetLatestMessagesFromUserResponses(length);
+                        StringBuilder latestMessages = new StringBuilder();
+                        foreach (var response in latestMessagesRaw)
+                        {
+                            latestMessages.AppendLine($"{response.UserName}: {response.Text}");
+                        }
+
+                        string latestMessagesFinal = latestMessages.ToString();
+                        double ratio = Tools.CalculateSummaryRatio(length);
+
+                        string summaryText = PythonInterop.GenerateSummary(latestMessagesFinal, ratio);
+
+                        var summary = new Summary { SummaryLength = length, Text = summaryText, Timestamp = DateTime.UtcNow };
+                        await mongo.GetSummariesCollection(characterName).InsertOneAsync(summary);
+                    }
                 }
-            }
             } catch(Exception ex) {
                 Console.WriteLine("Exception in TrySummarize: " + ex.Message);
             }

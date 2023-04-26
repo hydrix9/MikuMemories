@@ -95,7 +95,12 @@ namespace MikuMemories
                         if (colonIndex < 0 && matches.Count == 0) {
                             Console.WriteLine("error: LLM did not output in format MyCharacter: message_here and no supported [] tags found.");
                             Console.WriteLine("full output:\n" + lastLine);
-                            return;
+                            
+                            Console.WriteLine($"attempting to manually prefix with \"{Program.characterName}:\"");
+                            lastLine = Program.characterName + ": " + lastLine; 
+                            colonIndex = lastLine.IndexOf(':');
+
+                            //return;
                         }
 
                         string sender = lastLine.Substring(0, colonIndex).Trim();
