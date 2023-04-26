@@ -194,6 +194,15 @@ namespace MikuMemories
             // Print a welcome message to the user
             Console.WriteLine($"Welcome to the chat, {userName}!");
 
+
+            //print latest messages
+            var latestMessages = await Mongo.instance.GetLatestMessagesFromUserResponses(25);
+            foreach (var message in latestMessages)
+            {
+                Console.WriteLine($"{message.UserName}: {message.Text}");
+            }
+
+
             Console.WriteLine($"{characterCard.name} has entered the chat.");
 
 
@@ -318,31 +327,6 @@ namespace MikuMemories
             return contextBuilder.ToString();
         }
 
-        public static async Task<string> CompileRecentResponsesAsync_All(List<IMongoCollection<Response>> responseCollections, int n)
-        {
-            var recentResponses = new List<Response>();
-
-            foreach (var collection in responseCollections)
-            {
-                var responses = await collection.Find(FilterDefinition<Response>.Empty)
-                    .Sort(Builders<Response>.Sort.Descending(r => r.Timestamp))
-                    .Limit(n)
-                    .ToListAsync();
-                recentResponses.AddRange(responses);
-            }
-
-            recentResponses = recentResponses.OrderByDescending(r => r.Timestamp).ToList();
-
-            StringBuilder sb = new StringBuilder();
-            foreach (var response in recentResponses)
-            {
-                sb.AppendLine($"{response.UserName}: {response.Text}");
-            }
-
-            return sb.ToString();
-        }
-
-
 
         private static async Task<IEnumerable<Summary>> GetSummaries()
         {
@@ -385,15 +369,16 @@ namespace MikuMemories
         {
             StringBuilder sb = new StringBuilder();
 
-            sb.AppendLine("Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.");
-            sb.AppendLine("### Instruction:");
-            sb.AppendLine("generate the next line of this conversation from the character " + characterName + ". Make sure to include " + characterName + ": " + " as a prefix");
-            sb.AppendLine("### Input:");
+            sb.AppendLine($"In the conversation below, continue the dialogue by generating the next line for the character {characterName} Your response should be creative, reflect {characterName}'s personality and speech quirks, and be prefixed with {characterName}. ");
             sb.AppendLine(baseContext);
             sb.AppendLine(); // Adds an extra newline
+            sb.AppendLine("### Conversation So Far:");
             sb.AppendLine(recentResponses);
             sb.AppendLine(); // Adds an extra newline
-            sb.AppendLine(summaries);
+            if(summaries.Length > 0) {
+                sb.AppendLine("### Summaries of Previous Conversation and Events:");
+                sb.AppendLine(summaries);
+            }
             sb.AppendLine("### Response:");
 
             return sb.ToString();
@@ -402,6 +387,7 @@ namespace MikuMemories
 
         public static async Task TrySummarize()
         {
+            try {
             var mongo = Mongo.instance;
             int[] summaryLengths = Config.GetSummaryLengths();
 
@@ -430,6 +416,9 @@ namespace MikuMemories
                     await mongo.GetSummariesCollection(characterName).InsertOneAsync(summary);
                 }
             }
+            } catch(Exception ex) {
+                Console.WriteLine("Exception in TrySummarize: " + ex.Message);
+            }
         }
 
 
@@ -445,8 +434,10 @@ namespace MikuMemories
 
             if (startConversation)
             {
-                contextBuilder.AppendLine($"World Scenario: {characterCard.world_scenario}");
-                contextBuilder.AppendLine($"Character Greeting: {characterCard.char_greeting}");
+                if(!string.IsNullOrEmpty(characterCard.world_scenario) && characterCard.world_scenario != "")
+                    contextBuilder.AppendLine($"World Scenario: {characterCard.world_scenario}");
+                if(!string.IsNullOrEmpty(characterCard.char_greeting) && characterCard.char_greeting != "")
+                    contextBuilder.AppendLine($"Character Greeting: {characterCard.char_greeting}");
             }
 
             return contextBuilder.ToString();
@@ -517,13 +508,9 @@ namespace MikuMemories
             }
 
             try {
-                if (LlmApi.IsResponseRequestBeingProcessed) {
-                    return;
-                }
-
                 //don't do anything if we've already sent a request to get our response 
                 if(LlmApi.requestQueue.Any(entry => entry.type == LLmApiRequest.Type.Response && entry.author == characterName)) {
-                    Console.WriteLine("current queue: " +  LlmApi.requestQueue.Count);
+                    //Console.WriteLine("current queue: " +  LlmApi.requestQueue.Count);
                     return;
                 }
 
@@ -538,7 +525,8 @@ namespace MikuMemories
                 // Get responses collection and recent responses.
                 //var responsesCollection = Mongo.instance.GetResponsesCollection(userName);
 
-                string recentResponses = "";
+                List<Response> recentResponses;
+                StringBuilder recentResponsesText = new StringBuilder();
 
                 Response latestResponse = await Mongo.GetLatestResponseFromAllAsync();
                 //if the response is from our character, nothing to do, waiting for others to respond
@@ -549,11 +537,17 @@ namespace MikuMemories
                 if(logInputSteps) Console.WriteLine("Starting CompileRecentResponsesAsync...");
                 try
                 {
-                    var characterResponseCollections = await Mongo.instance.GetCharacterResponseCollections();
-                    var compileRecentResponsesTask = CompileRecentResponsesAsync_All(characterResponseCollections, int.Parse(Config.GetValue("numRecentResponses")));
+                    var compileRecentResponsesTask = Mongo.instance.GetLatestMessagesFromUserResponses(int.Parse(Config.GetValue("numRecentResponses")));
                     if (await Task.WhenAny(compileRecentResponsesTask, Task.Delay(timeoutMs)) == compileRecentResponsesTask)
                     {
+
                         recentResponses = await compileRecentResponsesTask;
+                        foreach (var response in recentResponses)
+                        {
+                            recentResponsesText.AppendLine($"{response.UserName}: {response.Text}");
+                        }
+
+
                         if(logInputSteps) Console.WriteLine("CompileRecentResponsesAsync completed.");
                     }
                     else
@@ -582,7 +576,7 @@ namespace MikuMemories
                         string summaries = string.Join(Environment.NewLine, summariesRaw.Select(entry => entry.Text));
 
                         // Get the compiled responses.
-                        fullContext = CompileFullContext(startingContext, recentResponses, summaries);
+                        fullContext = CompileFullContext(startingContext, recentResponsesText.ToString(), summaries);
 
                         if(logInputSteps) Console.WriteLine("GetSummaries and Context Compile completed.");
                     }
@@ -591,15 +585,11 @@ namespace MikuMemories
                         Console.WriteLine("GetSummaries timed out.");
                     }
 
-                    // Set the flag to indicate that a response request is being processed
-                    LlmApi.IsResponseRequestBeingProcessed = true;
 
                     // Add request to be sent later in a queue
                     var request = new LLmApiRequest(fullContext, LlmInputParams.defaultParams, LLmApiRequest.Type.Response, characterName);
                     LlmApi.QueueRequest(request);
-                    
-                    // Wait for the request to be processed
-                    await request.RequestProcessed.Task;
+ 
 
                 }
                 catch (Exception ex)

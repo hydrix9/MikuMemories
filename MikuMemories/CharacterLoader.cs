@@ -22,6 +22,7 @@ namespace MikuMemories
                     characterData = LoadJsonFromFile(filePath);
                     break;
                 case ".png":
+                case ".webp":
                     //characterData = CharacterLoader.LoadJsonFromPng(filePath);
                     // characterData = JObject.Parse(ReadLastLine(filePath));
                     characterData = await LoadJsonFromPng(filePath);

@@ -36,9 +36,7 @@ namespace MikuMemories
         [JsonIgnore]
         public string author;
 
-        [JsonIgnore]
-        public TaskCompletionSource<bool> RequestProcessed { get; set; } = new TaskCompletionSource<bool>();
-
+   
         public LLmApiRequest(string prompt, LlmInputParams @params, string type, string author, Callback<string> callback = null)
         {
             this.prompt = prompt;

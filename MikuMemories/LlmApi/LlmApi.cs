@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using System.Collections.Concurrent;
 using System.Threading.Channels;
 using System.Threading;
+using Newtonsoft.Json;
+using System.Text.RegularExpressions;
 
 namespace MikuMemories
 {
@@ -14,7 +16,6 @@ namespace MikuMemories
     {
         public static LlmApi instance;
 
-        public static bool IsResponseRequestBeingProcessed { get; set; } = false;
 
         public LlmApi()
         {
@@ -43,7 +44,7 @@ namespace MikuMemories
                 if(requestQueue.Count > 0) {
                     LLmApiRequest request = requestQueue[0];
 
-                    if(Program.logInputSteps) Console.WriteLine("sending request: \n" + request.AsString());
+                    if(Program.logInputSteps) Console.WriteLine("sending request: \n" + JsonConvert.SerializeObject(JObject.Parse(request.AsString()), Formatting.Indented));
                     
                     string jsonResponse = await RestApi.PostRequest(Config.GetValue("llmsrv"), request.AsString());
                     JObject parsedResponse = JObject.Parse(jsonResponse);
@@ -51,10 +52,7 @@ namespace MikuMemories
                     await ProcessPostResponse(request, parsedResponse);
                     
                     // Reset the flag to indicate that the response request has been processed
-                    LlmApi.IsResponseRequestBeingProcessed = false;
 
-
-                    request.RequestProcessed.SetResult(true);
                 }
             }
             catch (Exception ex)
@@ -82,7 +80,23 @@ namespace MikuMemories
 
                         // Find the sender based on the start of the line up to the first colon ':'
                         int colonIndex = lastLine.IndexOf(':');
-                        if (colonIndex < 0) return;
+
+                        string pattern = @"\[(.*?)\]";
+
+                        // Create a regular expression object with the pattern
+                        Regex regex = new Regex(pattern);
+
+                        // Find all the matches in the input string
+                        MatchCollection matches = regex.Matches(lastLine);
+
+                        //TODO: handling [SomeTag] tags for stuff like narration and [System]
+
+
+                        if (colonIndex < 0 && matches.Count == 0) {
+                            Console.WriteLine("error: LLM did not output in format MyCharacter: message_here and no supported [] tags found.");
+                            Console.WriteLine("full output:\n" + lastLine);
+                            return;
+                        }
 
                         string sender = lastLine.Substring(0, colonIndex).Trim();
 

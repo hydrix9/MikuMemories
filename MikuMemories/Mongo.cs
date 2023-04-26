@@ -145,10 +145,12 @@ namespace MikuMemories
                 allMessages.AddRange(messages);
             }
 
-            allMessages = allMessages.OrderByDescending(m => m.Timestamp).Take(count).ToList();
+            allMessages = allMessages.OrderBy(m => m.Timestamp).Take(count).ToList();
             //return allMessages.Select(m => m.Text).ToList();
             return allMessages;
         }
+
+
 
         public static string FormatUserName(string username)
         {

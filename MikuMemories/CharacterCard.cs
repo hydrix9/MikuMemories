@@ -25,6 +25,8 @@ namespace MikuMemories
     public string world_scenario { get; set; }
     public string char_persona { get; set; }
     public string char_name { get; set; }
+
+    
         public static CharacterCard FromJson(JObject jsonData)
         {
             return JsonConvert.DeserializeObject<CharacterCard>(jsonData.ToString());
@@ -32,7 +34,15 @@ namespace MikuMemories
 
         public override string ToString()
         {
-            return JsonConvert.SerializeObject(this);
+
+            // Create settings for JSON serialization that exclude null and empty values
+            var settings = new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate
+            };
+
+            return JsonConvert.SerializeObject(this, settings);
         }
     }
 
