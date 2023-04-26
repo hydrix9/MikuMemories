@@ -387,7 +387,7 @@ namespace MikuMemories
 
             sb.AppendLine("Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.");
             sb.AppendLine("### Instruction:");
-            sb.AppendLine("generate the next line of this conversation from the character " + characterName);
+            sb.AppendLine("generate the next line of this conversation from the character " + characterName + ". Make sure to include " + characterName + ": " + " as a prefix");
             sb.AppendLine("### Input:");
             sb.AppendLine(baseContext);
             sb.AppendLine(); // Adds an extra newline

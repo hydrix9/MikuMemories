@@ -59,13 +59,13 @@ namespace MikuMemories
         public IMongoCollection<Response> GetResponsesCollection(string userName)
         {
 
-            var database = _client.GetDatabase(FormatUserName(userName));
+            var database = _client.GetDatabase("user_" + FormatUserName(userName));
             var collection = database.GetCollection<Response>(responseCollection);
             return collection;
         }
         public IMongoCollection<Summary> GetSummariesCollection(string userName)
         {
-            var database = _client.GetDatabase(FormatUserName(userName));
+            var database = _client.GetDatabase("user_" + FormatUserName(userName));
             var collection = database.GetCollection<Summary>(summariesCollection);
 
             return collection;
@@ -105,7 +105,7 @@ namespace MikuMemories
 
         public async Task<List<string>> GetLatestMessages(string characterName, int count)
         {
-            var database = _client.GetDatabase(FormatUserName(characterName));
+            var database = _client.GetDatabase("user_" + FormatUserName(characterName));
             var collection = database.GetCollection<BsonDocument>(responseCollection);
             var messages = await collection.Find(new BsonDocument())
                                            .SortByDescending(m => m["timestamp"])
