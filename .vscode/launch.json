@@ -11,11 +11,19 @@
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
             "program": "${workspaceFolder}/MikuMemories/bin/Debug/net7.0/MikuMemories.dll",
-            "args": [],
+            "args": ["main_c-i_tavern.png"],
             "cwd": "${workspaceFolder}/MikuMemories",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
-            "console": "internalConsole",
-            "stopAtEntry": false
+            "console": "integratedTerminal",
+            "stopAtEntry": false,
+            "logging": {
+                "engineLogging": true,
+                "programOutput": true,
+                "exceptions": true
+            },
+	"env": {
+        	"PYTHONIOENCODING": "utf-8"
+	      }
         },
         {
             "name": ".NET Core Attach",
