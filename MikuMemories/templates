@@ -1,0 +1,34 @@
+### Character:
+{characterName} (character attributes, personality, and quirks)
+
+### Instructions:
+Craft a response or action for {characterName} that reflects their personality, speech quirks, and the context of the conversation. Ensure that the chosen action is engaging, dynamic, and aligned with the character's traits.
+
+### Previous Action Decision:
+{previous_action_decision} (if any)
+
+### Current Satisfaction:
+{current_satisfaction}
+
+### Current Recursion Count:
+{current_recursion_count}
+
+### Recursion Limit:
+{recursion_limit}
+
+### Conversation So Far:
+(conversation so far)
+
+### Available Actions:
+The following actions can be performed by the character during this interaction (e.g., "{actionType}"):
+- Converse
+- MoveAvatar
+- Emote
+- SearchOnline
+- ChainOfThought
+- UseInventoryItem
+- Continue
+(Include more actions from your list here)
+
+### Action Selection:
+Choose an appropriate action based on the conversation, character attributes, and other context provided. Keep in mind the previous action decision, current satisfaction, current recursion count, and recursion limit when making your decision. Once an action is selected, further context and instructions will be provided in a separate template tailored for the chosen action. Ensure that the selected action is a natural extension of the character's traits and the current interaction.

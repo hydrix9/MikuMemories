@@ -1,0 +1,161 @@
+Project Context: Develop an infinite chat system with a dynamic focus mechanism that efficiently manages context to improve conversation quality, including action-based responses and other improvements discussed.
+
+Key Goals:
+- Optimize context selection and response generation.
+- Implement the dynamic focus mechanism for a non-streaming setup.
+- Integrate action-based responses and other features discussed.
+- Adapt the system based on advancements in LLM technology and changes in hardware constraints.
+
+Project Repo: https://github.com/hydrix9/MikuMemories/
+
+Operating System: Arch Linux
+
+Programming Languages and Tools: C#, Visual Studio Code, Python.NET
+
+Hardware Constraints:
+- GPU: Newest GPU with 24GB vRAM (enough for a single 30B LLM model or several smaller ones)
+- CPU: Decent CPU, considering buying a second computer later to split the workload
+
+Performance: Performance optimization is important for the project.
+
+Project Intentions:
+- Develop an infinite chat system with a dynamic focus mechanism for efficient context management and improved conversation quality.
+- Implement a series of expansions or modules as outlined in the provided roadmap.
+- Ensure seamless integration of action-based responses and other features discussed.
+- Continuously evaluate the performance and relevance of the implemented techniques.
+- Potentially transition to a streaming setup if required, based on the performance of the non-streaming dynamic focus mechanism.
+
+Important Notes:
+- The project is storing conversations in a NoSQL database.
+- The current maximum context size is 2048 tokens, which may be expanded as technology progresses.
+- Work is an infinite resource, but redundant tasks should be avoided.
+
+Additional Considerations:
+1. Scalability: Ensure the system can handle increasing amounts of data and users as the project grows.
+2. Modularity: Design the system with modularity in mind to allow easy integration of new features and techniques.
+3. Privacy and Security: Protect user data and ensure secure communication between components.
+4. Evaluation Metrics: Establish clear evaluation metrics to measure the performance of the implemented techniques.
+5. Continuous Improvement: Regularly review the system's performance and user feedback to identify areas for improvement.
+
+Expectations:
+1. Improved conversation quality: The implemented techniques should lead to more coherent, context-aware, and engaging conversations.
+2. Efficient context management: The system should efficiently handle context selection and updating, without overloading the LLM.
+3. Adaptability: The system should be able to adapt to new advancements in LLM technology and any changes in hardware constraints.
+
+Extra Info:
+- When implementing the dynamic focus mechanism, consider experimenting with different methods for context selection, such as attention mechanisms or reinforcement learning.
+- As LLM technology evolves, stay informed about new techniques and methods that could be incorporated into the project to further improve context management and conversation quality.
+
+Clarification of Concepts:
+- Action Templates: A system where the LLM generates responses that include a list of actions or suggestions, which can be executed or incorporated into a conversation.
+- Focus System: A method that improves context management by selecting relevant context segments based on user input and updating the context accordingly.
+
+Hypothetical Technologies:
+- Hybrid Techniques: Combining multiple context management methods (e.g., context-aware query expansion, user intent recognition, etc.) to improve conversation quality.
+
+Roadmap:
+1. Action-Based Response Preparation
+   - Plan for an action-based response system.
+   - Design a modular structure for action handling.
+   - Prepare a list of possible actions and their corresponding functions.
+   - Ensure seamless integration with the existing conversation system.
+
+2. Context-aware Query Expansion: Enhance user input for better context selection.
+   - Develop techniques to expand user queries with relevant context.
+   - Consider using pre-existing query expansion methods or developing a custom solution.
+   - Experiment with different expansion techniques to optimize results.
+
+3. User Intent and Entity Recognition: Understand user inputs for targeted responses.
+   - Implement a method to recognize user intents and entities in input messages.
+   - Train or fine-tune a model to identify intents and entities specific to the system.
+   - Use the recognized intents and entities to guide context selection and response generation.
+
+4. Conversational Clustering: Group messages based on semantic similarity to optimize context selection.
+   - Develop a method to cluster conversation segments based on their semantic content.
+   - Use the clustering information to guide context selection and maintain a focused conversation.
+   - Continuously update the clustering information as new conversation data is added.
+
+5. Dynamic Context Selection with Recency Bias: Keep context up-to-date and relevant.
+   - Implement a context selection algorithm that prioritizes recent and relevant conversation segments.
+   - Experiment with different recency bias factors to optimize the balance between recency and relevance.
+   - Continuously update the context selection algorithm as new conversation data is added.
+
+6. Topic Modeling: Detect underlying themes and prioritize context segments based on current topics.
+   - Implement a topic modeling technique to identify the main themes in the conversation.
+   - Use the identified topics to guide context selection and response generation.
+   - Regularly update the topic modeling information to ensure that it stays relevant to the ongoing conversation.
+
+7. Dynamic Focus Mechanism (Non-streaming): Analyze user input, select relevant context segments, and update context based on previous interactions before feeding the input to the LLM.
+   - Design and implement the dynamic focus mechanism for the non-streaming setup.
+   - Experiment with different methods for context selection, such as attention mechanisms or reinforcement learning.
+   - Continuously evaluate and adjust the focus mechanism based on its performance in the system.
+
+8. Multi-modal Context Processing: Handle non-textual content to improve conversation quality.
+   - Design a system to process and integrate non-textual context, such as images, audio, or video.
+   - Incorporate the processed non-textual context into the context selection and response generation processes.
+   - Continuously evaluate the performance of the multi-modal context processing system and adjust it as needed.
+
+9. Context-aware Response Ranking: Evaluate and rank multiple candidate responses.
+   - Generate multiple candidate responses for each user input.
+   - Implement a ranking algorithm that considers the context and other factors to determine the most appropriate response.
+   - Continuously evaluate the performance of the response ranking algorithm and adjust it as needed.
+
+10. Sentiment and Emotion Analysis: Adapt responses based on the emotional state of the conversation.
+   - Implement a sentiment and emotion analysis system to understand the emotional state of the conversation.
+   - Use the emotional analysis to adapt the LLM's responses accordingly, making the conversation more engaging and natural.
+   - Continuously evaluate the performance of the sentiment and emotion analysis system and adjust it as needed.
+   
+11. Seamless Integration with Action-Based Responses:
+   - Ensure the system is designed with future integration of action-based responses in mind.
+   - Develop a generic, wide-scope action system that leverages the hybrid techniques from the roadmap to perform arbitrary external actions with other programs.
+   - Prepare the LLM to understand and process user inputs that involve actions, for seamless integration with action-based responses when the time comes.
+
+12. Scalability, Modularity, Privacy, and Security:
+   - Design the system with scalability in mind to handle increasing amounts of data and users as the project grows.
+   - Ensure modularity in the system design to allow easy integration of new features and techniques.
+   - Protect user data and ensure secure communication between components.
+
+13. Evaluation Metrics and Continuous Improvement:
+   - Establish clear evaluation metrics to measure the performance of the implemented techniques.
+   - Regularly review the system's performance and user feedback to identify areas for improvement.
+   - Adapt the system based on new advancements in LLM technology and any changes in hardware constraints.
+
+Explanation of Multi-step Template System:
+
+The multi-step template system is designed to guide the LLM in generating responses based on a set of predefined templates. Each template contains placeholders that the LLM should fill in with appropriate content based on the conversation context. The system also allows the LLM to execute specific actions based on the user input or context.
+
+Here are some example templates provided within triple backticks:
+
+\```
+### Formatted Recipes:
+{formatted_recipes}
+
+### Instructions:
+Choose a recipe from the list or ask for more information about a specific recipe. You can also search for more recipes or start a new conversation topic.
+
+### Available Actions:
+- Converse
+- MoveAvatar
+- Emote
+- SearchOnline
+- ChainOfThought
+- UseInventoryItem
+- Continue
+\```
+
+\```
+### Instructions:
+Search for more recipes or a different topic, based on the user's request. Ensure the search results are relevant and provide a brief summary of the findings.
+
+### Search Query:
+{search_query}
+
+### Results:
+{search_results}
+\```
+
+When working with the templates, feel free to ask for clarification or more examples if needed. The templates may be adapted and extended based on the conversation context and requirements.
+
+
+Help me implement step [number] of this roadmap. Please analyze the current project repo code at https://github.com/hydrix9/MikuMemories/ before providing guidance. Keep in mind my progress, diagnostics, and code snippets from our conversation, and adapt them as necessary.
+

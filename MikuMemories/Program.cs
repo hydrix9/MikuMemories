@@ -30,6 +30,9 @@ namespace MikuMemories
 
         */
 
+        //used to execute things on the main thread
+        public static SemaphoreSlim MainThreadSemaphore = new SemaphoreSlim(1, 1);
+
         public static string characterName;
         public static CharacterCard characterCard;
 
@@ -40,7 +43,9 @@ namespace MikuMemories
 
 
         static async Task Main(string[] args)
-        { 
+        {
+
+
             TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
 
             string logFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "debug_log.log");
@@ -51,6 +56,10 @@ namespace MikuMemories
             new Config(); //create instance
             new Mongo(); //create instance
             new LlmApi(); //create instance
+            new PythonInterop(); //create instance
+
+            string summary = await PythonInterop.GenerateSummary("test", 0.5);
+            Console.WriteLine(summary);
 
             string pythonPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Python");
             string pythonLibPath = Path.Combine(pythonPath, "Lib");
@@ -365,6 +374,20 @@ namespace MikuMemories
 
         private static string CompileFullContext(string baseContext, string recentResponses, string summaries)
         {
+            /*
+            Continue the dialogue below by generating the next line for the character {characterName}. Your response should reflect {characterName}'s personality and speech quirks while considering the context of the conversation. Be sure to prefix the response with \"{characterName}:\" (e.g., \"{characterName}: Hello!\") Feel free to include actions or reactions to make the response more engaging.
+            (character attributes here)
+            ### Conversation So Far:
+            (conversation so far)
+            ### Note:
+            In your response, you may incorporate actions or reactions (e.g., *moves closer to you*, *blushes*, *spins around while singing*) to make the dialogue more engaging and dynamic.
+            ### Summaries of Previous Conversation and Events:
+            (summaries)
+            ### Actions:
+            Describe any actions the character might perform during this interaction, using a format like "{actionType}:{parameters}" (e.g., "MoveAvatar:forward,5", "SearchOnline:best pizza places"). You can chain multiple actions by separating them with semicolons.
+            ### Response:
+            */
+
             StringBuilder sb = new StringBuilder();
 
             sb.AppendLine($"Continue the dialogue below by generating the next line for the character {characterName}. Your response should reflect {characterName}'s personality and speech quirks while considering the context of the conversation. Be sure to prefix the response with \"{characterName}:\" (e.g., \"{characterName}: Hello!\") Feel free to include actions or reactions to make the response more engaging.");
@@ -433,7 +456,7 @@ namespace MikuMemories
                         string latestMessagesFinal = latestMessages.ToString();
                         double ratio = Tools.CalculateSummaryRatio(length);
 
-                        string summaryText = PythonInterop.GenerateSummary(latestMessagesFinal, ratio);
+                        string summaryText = await PythonInterop.GenerateSummary(latestMessagesFinal, ratio);
 
                         var summary = new Summary { SummaryLength = length, Text = summaryText, Timestamp = DateTime.UtcNow };
                         await mongo.GetSummariesCollection(characterName).InsertOneAsync(summary);

@@ -1,0 +1,58 @@
+Project Context: Develop an action-based response system for the infinite chat system with dynamic focus mechanism, enabling the LLM to trigger specific functions or actions based on its understanding of the conversation.
+
+Key Goals:
+- Integrate action-based responses seamlessly with the existing system.
+- Enable the LLM to perform various actions while maintaining a natural conversation flow.
+- Develop a flexible framework for incorporating new actions and functionalities.
+
+Roadmap:
+
+1. Action Identification and Extraction: Train the LLM to recognize and extract potential actions from its responses.
+2. Action Execution Framework: Create a framework for executing different types of actions triggered by the LLM.
+3. Action Library: Develop a library of predefined actions that the LLM can perform, such as looking up information or interacting with a virtual environment.
+4. Customizable Actions: Design a system for users to define custom actions that can be executed by the LLM.
+5. Action Integration in Responses: Train the LLM to incorporate actions within its responses, while maintaining a natural conversation flow.
+6. Action Logging and Monitoring: Implement logging and monitoring tools to track the actions performed by the LLM.
+7. Evaluation and Feedback: Develop a system for evaluating the effectiveness of action-based responses and collecting user feedback.
+
+Project Repo: https://github.com/hydrix9/MikuMemories/
+
+Operating System: Arch Linux
+
+Programming Languages and Tools: C#, Visual Studio Code, Python.NET
+
+Hardware Constraints:
+- GPU: Newest GPU with 24GB vRAM (enough for a single 30B LLM model or several smaller ones)
+- CPU: Decent CPU, considering buying a second computer later to split the workload
+
+Performance: Performance optimization is important for the project.
+
+Project Intentions:
+- Implement an action-based response system that integrates seamlessly with the existing infinite chat system with dynamic focus mechanism.
+- Enable the LLM to perform various actions during a conversation, such as interacting with a virtual environment or searching for information.
+- Develop a flexible and extensible framework for incorporating new actions and functionalities.
+
+Important Notes:
+- Ensure the system is designed with future compatibility and extensibility in mind.
+- Maintain a natural conversation flow while integrating action-based responses.
+
+Additional Considerations:
+
+1. Scalability: Design the action-based response system to handle increasing amounts of data and users as the project grows.
+2. Modularity: Develop the system with modularity in mind to allow easy integration of new features and techniques.
+3. Privacy and Security: Protect user data and ensure secure communication between components.
+4. Evaluation Metrics: Establish clear evaluation metrics to measure the performance of the implemented techniques.
+5. Continuous Improvement: Regularly review the system's performance and user feedback to identify areas for improvement.
+
+Expectations:
+
+1. Seamless Integration: The action-based response system should integrate seamlessly with the existing infinite chat system.
+2. Improved Conversation Quality: The LLM should be able to perform actions during a conversation, enhancing user engagement and experience.
+3. Flexibility and Extensibility: The system should be designed to accommodate new actions and functionalities easily.
+
+Extra Info:
+
+- When implementing the action-based response system, consider researching reinforcement learning or other advanced techniques to improve the LLM's ability to identify and execute actions.
+- As LLM technology evolves, stay informed about new techniques and methods that could be incorporated into the project to further improve action-based responses and conversation quality.
+
+Help me implement step [number] of this roadmap. Please analyze the current project repo code at https://github.com/hydrix9/MikuMemories/ before providing guidance. Keep in mind my progress, diagnostics, and code snippets from our conversation, and adapt them as necessary

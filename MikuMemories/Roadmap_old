@@ -1,0 +1,75 @@
+Project Context: Develop an infinite chat system with a dynamic focus mechanism that efficiently manages context to improve conversation quality.
+
+Key Goals:
+- Optimize context selection and response generation.
+- Adapt the dynamic focus mechanism for a non-streaming setup.
+- Implement the roadmap as a series of expansions or modules.
+
+Roadmap:
+1. Action-Based Response Preparation
+   - Plan for an action-based response system.
+   - Design a modular structure for action handling.
+   - Prepare a list of possible actions and their corresponding functions.
+   - Ensure seamless integration with the existing conversation system.
+
+2. Context-aware Query Expansion: Enhance user input for better context selection.
+3. User Intent and Entity Recognition: Understand user inputs for targeted responses.
+4. Conversational Clustering: Group messages based on semantic similarity to optimize context selection.
+5. Dynamic Context Selection with Recency Bias: Keep context up-to-date and relevant.
+6. Topic Modeling: Detect underlying themes and prioritize context segments based on current topics.
+7. Dynamic Focus Mechanism (Non-streaming): Analyze user input, select relevant context segments, and update context based on previous interactions before feeding the input to the LLM.
+8. Multi-modal Context Processing: Handle non-textual content to improve conversation quality.
+9. Context-aware Response Ranking: Evaluate and rank multiple candidate responses.
+10. Sentiment and Emotion Analysis: Adapt responses based on the emotional state of the conversation.
+
+Project Repo: https://github.com/hydrix9/MikuMemories/
+
+Operating System: Arch Linux
+
+Programming Languages and Tools: C#, Visual Studio Code, Python.NET
+
+Hardware Constraints:
+- GPU: Newest GPU with 24GB vRAM (enough for a single 30B LLM model or several smaller ones)
+- CPU: Decent CPU, considering buying a second computer later to split the workload
+
+Performance: Performance optimization is important for the project.
+
+Project Intentions:
+- Develop an infinite chat system with a dynamic focus mechanism for efficient context management and improved conversation quality.
+- Adapt the dynamic focus mechanism to work with the non-streaming setup (--no-stream) currently in use.
+- Implement the provided roadmap as a series of expansions or modules.
+- Continuously evaluate the performance and relevance of the implemented techniques.
+- Potentially transition to a streaming setup if required, based on the performance of the non-streaming dynamic focus mechanism.
+
+Important Notes:
+- The project is storing conversations in a NoSQL database.
+- The current maximum context size is 2048 tokens, which may be expanded as technology progresses.
+- Work is an infinite resource, but redundant tasks should be avoided.
+
+Additional Considerations:
+
+1. Scalability: Ensure the system can handle increasing amounts of data and users as the project grows.
+2. Modularity: Design the system with modularity in mind to allow easy integration of new features and techniques.
+3. Privacy and Security: Protect user data and ensure secure communication between components.
+4. Evaluation Metrics: Establish clear evaluation metrics to measure the performance of the implemented techniques.
+5. Continuous Improvement: Regularly review the system's performance and user feedback to identify areas for improvement.
+
+Expectations:
+
+1. Improved conversation quality: The implemented techniques should lead to more coherent, context-aware, and engaging conversations.
+2. Efficient context management: The system should efficiently handle context selection and updating, without overloading the LLM.
+3. Adaptability: The system should be able to adapt to new advancements in LLM technology and any changes in hardware constraints.
+
+Extra Info:
+
+- When implementing the dynamic focus mechanism, consider experimenting with different methods for context selection, such as attention mechanisms or reinforcement learning.
+- As LLM technology evolves, stay informed about new techniques and methods that could be incorporated into the project to further improve context management and conversation quality.
+
+Action-based Response Compatibility:
+
+- The system should be designed with future integration of action-based responses in mind, allowing the LLM to trigger specific actions or functions based on its understanding of the conversation.
+- Examples of actions: moving an avatar in a video game, performing an emote, looking up information online, entering a chain-of-thought to perform a task, taking a list of possible actions and integrating them into speech with the user.
+- The roadmap and system architecture should be adaptable and modular enough to accommodate these action-based responses, minimizing the need for extensive rewrites or redesigns when implementing this feature.
+- The LLM should be able to understand and process user inputs that involve actions, preparing it for seamless integration with action-based responses when the time comes.
+
+Help me implement step [number] of this roadmap. Please analyze the current project repo code at https://github.com/hydrix9/MikuMemories/ before providing guidance. Keep in mind my progress, diagnostics, and code snippets from our conversation, and adapt them as necessary

@@ -13,7 +13,11 @@
     "numRecentResponses": 100,
 
     "characterCardFileName": "example_character_card.json",
-    "summariesLengths": [ 100, 1000, 10000 ]
+    "summariesLengths": [ 100, 1000, 10000 ],
 
+    "baseDir": "/home/io/MikuMemories/MikuMemories/",
+
+    "pythonDll": "/home/io/miniconda3/lib/libpython3.so",
+    "pythonHome": "/home/io/miniconda3/"
 
 }

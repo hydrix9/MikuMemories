@@ -1,15 +1,19 @@
-#!/bin/sh
+#!/bin/bash
 
-cd MikuMemories/MikuMemories
+# Set the path to the file to be monitored
+file_path="/home/io/MikuMemories/MikuMemories/bin/Debug/net7.0/MikuMemories.dll"
 
-# Kill any running instances of the program
-program_name="MikuMemories"
-old_instances=$(pgrep -f "$program_name")
-if [ ! -z "$old_instances" ]; then
-    echo "Killing old instances of the program:"
-    echo "$old_instances"
-    kill -9 $old_instances
+# Use fuser to find the PID of the process accessing the file
+pid=$(fuser -k "$file_path")
+
+# If a PID was found, terminate the process
+if [ -n "$pid" ]; then
+  echo "Process $pid accessing $file_path found and terminated."
+else
+  echo "No processes accessing $file_path found."
 fi
+
+
 
 # Function to clean up and exit
 clean_exit() {

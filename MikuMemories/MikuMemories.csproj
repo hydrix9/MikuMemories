@@ -2,8 +2,12 @@
 
 
   <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <OutputType>Exe</OutputType>
     <TargetFramework>net7.0</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DefaultItemExcludes>$(DefaultItemExcludes);PythonNet/**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,7 +16,6 @@
     <PackageReference Include="MongoDB.Driver" Version="2.13.2" />
     <PackageReference Include="SixLabors.ImageSharp" Version="1.0.4" />
     <Reference Include="Python.Runtime">
-      <HintPath>path_to_your_Python.Runtime.dll</HintPath>
     </Reference>
     <PackageReference Include="pythonnet" Version="3.0.1" />
     <PackageReference Include="System.Linq.Async" Version="6.0.1" />
