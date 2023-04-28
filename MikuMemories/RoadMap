@@ -13,8 +13,9 @@ Operating System: Arch Linux
 Programming Languages and Tools: C#, Visual Studio Code, Python.NET
 
 Hardware Constraints:
-- GPU: Newest GPU with 24GB vRAM (enough for a single 30B LLM model or several smaller ones)
-- CPU: Decent CPU, considering buying a second computer later to split the workload
+- GPU: RTX 4090 with 24GB vRAM (enough for a single 30B LLM model or several smaller ones)
+- CPU: Decent CPU
+- considering buying a second computer later to split the workload
 
 Performance: Performance optimization is important for the project.
 
@@ -157,5 +158,7 @@ Search for more recipes or a different topic, based on the user's request. Ensur
 When working with the templates, feel free to ask for clarification or more examples if needed. The templates may be adapted and extended based on the conversation context and requirements.
 
 
-Help me implement step [number] of this roadmap. Please analyze the current project repo code at https://github.com/hydrix9/MikuMemories/ before providing guidance. Keep in mind my progress, diagnostics, and code snippets from our conversation, and adapt them as necessary.
+Help me implement step [number] of this roadmap. Here's the current code:
+https://github.com/hydrix9/MikuMemories/
+Keep in mind my progress, diagnostics, and code snippets from our conversation, and adapt them as necessary.
 

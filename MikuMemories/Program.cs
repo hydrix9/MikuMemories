@@ -371,44 +371,6 @@ namespace MikuMemories
             }
         }
 
-
-        private static string CompileFullContext(string baseContext, string recentResponses, string summaries)
-        {
-            /*
-            Continue the dialogue below by generating the next line for the character {characterName}. Your response should reflect {characterName}'s personality and speech quirks while considering the context of the conversation. Be sure to prefix the response with \"{characterName}:\" (e.g., \"{characterName}: Hello!\") Feel free to include actions or reactions to make the response more engaging.
-            (character attributes here)
-            ### Conversation So Far:
-            (conversation so far)
-            ### Note:
-            In your response, you may incorporate actions or reactions (e.g., *moves closer to you*, *blushes*, *spins around while singing*) to make the dialogue more engaging and dynamic.
-            ### Summaries of Previous Conversation and Events:
-            (summaries)
-            ### Actions:
-            Describe any actions the character might perform during this interaction, using a format like "{actionType}:{parameters}" (e.g., "MoveAvatar:forward,5", "SearchOnline:best pizza places"). You can chain multiple actions by separating them with semicolons.
-            ### Response:
-            */
-
-            StringBuilder sb = new StringBuilder();
-
-            sb.AppendLine($"Continue the dialogue below by generating the next line for the character {characterName}. Your response should reflect {characterName}'s personality and speech quirks while considering the context of the conversation. Be sure to prefix the response with \"{characterName}:\" (e.g., \"{characterName}: Hello!\") Feel free to include actions or reactions to make the response more engaging.");
-            sb.AppendLine(baseContext);
-            sb.AppendLine(); // Adds an extra newline
-            sb.AppendLine("### Conversation So Far:");
-            sb.AppendLine(recentResponses);
-            sb.AppendLine(); // Adds an extra newline
-            sb.AppendLine("### Note:");
-            sb.AppendLine("In your response, you may incorporate actions or reactions (e.g., *moves closer to you*, *blushes*, *spins around while singing*) to make the dialogue more engaging and dynamic.");
-            sb.AppendLine(); // Adds an extra newline            
-            if(summaries.Length > 0) {
-                sb.AppendLine("### Summaries of Previous Conversation and Events:");
-                sb.AppendLine(summaries);
-            }
-            sb.AppendLine("### Response:");
-
-            return sb.ToString();
-
-        }
-
         public static async Task TrySummarize()
         {
             try {
@@ -612,17 +574,14 @@ namespace MikuMemories
                 {
 
                     var getSummariesTask = GetSummaries();
-                    string fullContext = "";
-                    
+                    string summaries = "";
+
                     if (await Task.WhenAny(getSummariesTask, Task.Delay(timeoutMs)) == getSummariesTask)
                     {
 
                         IEnumerable<Summary> summariesRaw = await getSummariesTask;
 
-                        string summaries = string.Join(Environment.NewLine, summariesRaw.Select(entry => entry.Text));
-
-                        // Get the compiled responses.
-                        fullContext = CompileFullContext(startingContext, recentResponsesText.ToString(), summaries);
+                        summaries = string.Join(Environment.NewLine, summariesRaw.Select(entry => entry.Text));
 
                         if(logInputSteps) Console.WriteLine("GetSummaries and Context Compile completed.");
                     }
@@ -631,9 +590,11 @@ namespace MikuMemories
                         Console.WriteLine("GetSummaries timed out.");
                     }
 
+                    //create context object
+                    var context = new ConversationContext(startingContext, recentResponsesText.ToString(), summaries);
 
                     // Add request to be sent later in a queue
-                    var request = new LLmApiRequest(fullContext, LlmInputParams.defaultParams, LLmApiRequest.Type.Response, characterName);
+                    var request = new LLmApiRequest(context.CompileFullContext_GeneralMain(), LlmInputParams.defaultParams, LLmApiRequest.Type.Response, characterName);
                     LlmApi.QueueRequest(request);
  
 

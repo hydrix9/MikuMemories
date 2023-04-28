@@ -1,3 +1,26 @@
+
+
+///////////////////
+original
+///////////////////
+
+
+Continue the dialogue below by generating the next line for the character {characterName}. Your response should reflect {characterName}'s personality and speech quirks while considering the context of the conversation. Be sure to prefix the response with \"{characterName}:\" (e.g., \"{characterName}: Hello!\") Feel free to include actions or reactions to make the response more engaging.
+(character attributes here)
+### Conversation So Far:
+(conversation so far)
+### Note:
+In your response, you may incorporate actions or reactions (e.g., *moves closer to you*, *blushes*, *spins around while singing*) to make the dialogue more engaging and dynamic.
+### Summaries of Previous Conversation and Events:
+(summaries)
+### Actions:
+Describe any actions the character might perform during this interaction, using a format like "{actionType}:{parameters}" (e.g., "MoveAvatar:forward,5", "SearchOnline:best pizza places"). You can chain multiple actions by separating them with semicolons.
+### Response:
+
+///////////////////////
+first action prototype
+//////////////////////
+
 ### Character:
 {characterName} (character attributes, personality, and quirks)
 
@@ -32,3 +55,25 @@ The following actions can be performed by the character during this interaction 
 
 ### Action Selection:
 Choose an appropriate action based on the conversation, character attributes, and other context provided. Keep in mind the previous action decision, current satisfaction, current recursion count, and recursion limit when making your decision. Once an action is selected, further context and instructions will be provided in a separate template tailored for the chosen action. Ensure that the selected action is a natural extension of the character's traits and the current interaction.
+
+
+///////////////////
+general main
+///////////////////
+
+Continue the dialogue below by generating the next line for the character {context.CharacterName}. Your response should reflect {context.CharacterName}'s personality and speech quirks while considering the context of the conversation. Be sure to prefix the response with \""{context.CharacterName}:\" (e.g., \""{context.CharacterName}: Hello!\") Feel free to include actions or reactions to make the response more engaging.
+(character attributes here)
+### Conversation So Far:
+{context.Conversation}
+### Note:
+In your response, you may incorporate actions or reactions (e.g., *moves closer to you*, *blushes*, *spins around while singing*) to make the dialogue more engaging and dynamic.
+### Summaries of Previous Conversation and Events:
+{context.Summaries}
+### Focus:
+{focus}
+### Instruction:
+Incorporate the information provided in the Focus section into your response, ensuring it is relevant and appropriate for the current conversation.
+### Actions:
+Describe any actions the character might perform during this interaction, using a format like \""{actionType}:{parameters}\" (e.g., \""MoveAvatar:forward,5\", \""SearchOnline:best pizza places\"). You can chain multiple actions by separating them with semicolons.
+### Response:";
+
