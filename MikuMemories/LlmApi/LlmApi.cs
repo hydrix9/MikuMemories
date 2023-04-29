@@ -119,7 +119,7 @@ namespace MikuMemories
                         var userCollection = Mongo.instance.GetUserCollection(sender, "responses");
 
                         // Insert the LLM's response into the database.
-                        await Program.InsertResponseAsync(Mongo.instance.GetResponsesCollection(sender), res);
+                        await Program.InsertResponseAsync(sender, Mongo.instance.GetResponsesCollection(sender), res);
                         
                         Console.WriteLine(lastLine); //append the character's response to chat
 

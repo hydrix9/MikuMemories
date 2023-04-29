@@ -50,11 +50,6 @@ namespace MikuMemories
             return _client.GetDatabase(FormatUserName(userName)).GetCollection<Response>($"user_{type}");
         }
 
-        public void InsertResponse(string userName, Response response)
-        {
-            GetResponsesCollection(userName).InsertOne(response);
-        }
-
 
         public IMongoCollection<Response> GetResponsesCollection(string userName)
         {
@@ -206,6 +201,8 @@ namespace MikuMemories
         public DateTime Timestamp { get; set; }
         public string UserName { get; set; }
         public string Text { get; set; }
+        public long EmbeddingId { get; set; }
+        
     }
 
     public class Summary

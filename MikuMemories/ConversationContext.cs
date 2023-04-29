@@ -61,7 +61,7 @@ namespace MikuMemories {
         {
             StringBuilder sb = new StringBuilder();
 
-            sb.AppendLine($"Continue the dialogue below by generating the next line for the character {characterName}. Your response should reflect {characterName}'s personality and speech quirks while considering the context of the conversation. Be sure to prefix the response with \"{characterName}:\" (e.g., \"{characterName}: Hello!\") Feel free to include actions or reactions to make the response more engaging.");
+            sb.AppendLine($"Continue the dialogue below by generating the next line for the character {Program.characterName}. Your response should reflect {Program.characterName}'s personality and speech quirks while considering the context of the conversation. Be sure to prefix the response with \"{Program.characterName}:\" (e.g., \"{Program.characterName}: Hello!\") Feel free to include actions or reactions to make the response more engaging.");
             sb.AppendLine(characterContext);
             sb.AppendLine(); // Adds an extra newline
             sb.AppendLine("### Conversation So Far:");

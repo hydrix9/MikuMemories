@@ -290,12 +290,20 @@ namespace MikuMemories
             Environment.Exit(0);
         }
 
-        public static async Task InsertResponseAsync(IMongoCollection<Response> collection, Response response)
+        public static async Task InsertResponseAsync(String userName, IMongoCollection<Response> collection, Response response)
         {
             if(logInputSteps) Console.WriteLine("InsertResponseAsync: Trying to insert the user response...");
 
             try
             {
+                //make id that we can put in milvus
+                ObjectId mongoId = new ObjectId();
+                response.Id = mongoId;
+
+                float[] embedding = PythonInterop.GenerateEmbedding(response.Text);
+                long embeddingId = Milvus.instance.InsertEmbedding(Milvus.GetUserEmebddingsName(userName), mongoId, embedding);
+                response.EmbeddingId = embeddingId; //embedding ID used in Milvus
+
                 var insertTask = collection.InsertOneAsync(response);
                 const int timeoutMs = 5000;
 
@@ -484,7 +492,7 @@ namespace MikuMemories
                     if(logInputSteps) Console.WriteLine("Starting InsertResponseAsync...");
                     try
                     {
-                        var insertResponseTask = InsertResponseAsync(responsesCollection, userResponse);
+                        var insertResponseTask = InsertResponseAsync(userName, responsesCollection, userResponse);
                         if (await Task.WhenAny(insertResponseTask, Task.Delay(timeoutMs)) == insertResponseTask)
                         {
                             await insertResponseTask;

@@ -169,6 +169,23 @@ namespace MikuMemories
 
             return null;
         }
+
+
+        public static float[] GenerateEmbedding(string text)
+        {
+            dynamic py = Py.Import("__main__");
+            Py.Import("embeddings"); // Replace with the name of your Python script
+
+            PyObject result = py.generate_embedding(text);
+            float[] embedding = result.As<float[]>();
+
+            return embedding;
+        }
+
+
+
+
+
         public static async Task<string> GenerateSummary(string text, double ratio = 0.3)
         {
             
