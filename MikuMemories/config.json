@@ -18,6 +18,15 @@
     "baseDir": "/home/io/MikuMemories/MikuMemories/",
 
     "pythonDll": "/home/io/miniconda3/lib/libpython3.so",
-    "pythonHome": "/home/io/miniconda3/"
+    "pythonHome": "/home/io/miniconda3/",
 
+    "sentence_transformer": "sentence-transformers/all-mpnet-base-v2",
+
+    "query_expansion_topn": "3",
+
+
+
+
+    "query_expansion": "distilbert-base-uncased-finetuned-sst-2-english",
+    "stopwords": "stopwords_english.txt"
 }

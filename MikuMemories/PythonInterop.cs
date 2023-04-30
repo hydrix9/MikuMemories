@@ -14,8 +14,23 @@ namespace MikuMemories
 
         private static dynamic steganoHelper;
 
+        //python main and imports
+        dynamic _py;
+        dynamic site;
+        dynamic os;
+        dynamic sys;
+        dynamic summarizer;
+        dynamic query_processing;
+        dynamic nlp_model;
+        dynamic embedding_model;
+        dynamic embedding;
+        
+        public static PythonInterop instance;
+
         public PythonInterop()
         {
+            instance = this;
+
             try
             {
 
@@ -114,7 +129,20 @@ namespace MikuMemories
 
                 PythonEngine.Initialize();
                 PythonEngine.BeginAllowThreads();
+
+                _py = Py.Import("__main__");
+                site = Py.Import("site");
+                Console.WriteLine("python site-packages: " + site.getsitepackages());
+                os = Py.Import("os");
+                sys = Py.Import("sys");
+                embedding = Py.Import("embeddings");
+                embedding_model = embedding.load_embedding_model();
+                summarizer = Py.Import("summarizer");
+                query_processing = Py.Import("query_processing");
+                nlp_model = query_processing.load_nlp_model();
+
             }
+            
             catch (Exception ex)
             {
                 Console.WriteLine($"Error initializing PythonInterop: {ex}");
@@ -171,22 +199,35 @@ namespace MikuMemories
         }
 
 
-        public static float[] GenerateEmbedding(string text)
+        public float[] GenerateEmbedding(string text)
         {
-            dynamic py = Py.Import("__main__");
-            Py.Import("embeddings"); // Replace with the name of your Python script
 
-            PyObject result = py.generate_embedding(text);
+            PyObject result = _py.generate_embedding(text);
             float[] embedding = result.As<float[]>();
 
             return embedding;
         }
 
+        public string[] Tokenize(string text)
+        {
+            PyObject tokens = query_processing.tokenize(text);
+            return tokens.As<string[]>();
+        }
+
+        public string ExpandQuery(string query)
+        {
+            PyObject expanded_query = query_processing.expand_query(query);
+            return expanded_query.As<string>();
+        }
+
+        //returns query expanded tokens
+        public string[] ProcessQuery(string userInput)
+        {
+            return query_processing.process_query(embedding_model, userInput, int.Parse(Config.GetValue("query_expansion_topn")));
+        }
 
 
-
-
-        public static async Task<string> GenerateSummary(string text, double ratio = 0.3)
+        public async Task<string> GenerateSummary(string text, double ratio = 0.3)
         {
             
             string summary = null;
@@ -199,17 +240,12 @@ namespace MikuMemories
 
                 using (Py.GIL())
                 {
-                    dynamic site = Py.Import("site");
-                    Console.WriteLine("python site-packages: " + site.getsitepackages());
-                    dynamic os = Py.Import("os");
-                    dynamic sys = Py.Import("sys");
 
                     Console.WriteLine("Python executable path: " + sys.executable.ToString());
 
                     sys.path.append(os.getcwd());
                     sys.path.append("/home/io/MikuMemories/MikuMemories/");
 
-                    dynamic summarizer = Py.Import("summarizer");
                     summary = summarizer.generate_summary(text, ratio);
                 }
             }

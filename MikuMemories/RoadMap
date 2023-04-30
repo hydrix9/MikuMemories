@@ -125,6 +125,50 @@ Explanation of Multi-step Template System:
 
 The multi-step template system is designed to guide the LLM in generating responses based on a set of predefined templates. Each template contains placeholders that the LLM should fill in with appropriate content based on the conversation context. The system also allows the LLM to execute specific actions based on the user input or context.
 
+Focus System Overview:
+
+The focus system is designed to enhance the context management and reasoning capabilities of a large language model (LLM) by using an external embeddings database (e.g., Milvus) to store and retrieve relevant information based on user input. This system aims to improve the LLM's performance by providing more refined context, enabling better control over output, and overcoming context size limitations of the base model.
+
+Implementations:
+- Vector stores are used to store context embeddings and facilitate retrieval based on cosine similarity.
+- Focus operators are employed to guide the retrieval of context information from the vector store using configurable reasoning.
+- Multiple focus layers can be utilized, each pulling from different sources and guiding the retrieval process based on specific criteria.
+
+Intentions and Goals:
+- Enhance LLM's ability to manage context and reason more effectively by refining the context provided to the model.
+- Allow users to simulate larger context windows and control the LLM's reasoning process indirectly.
+- Improve the speed and performance of the system compared to chaining approaches that rely on multiple LLM calls.
+
+Restrictions:
+- The focus system does not modify the base model architecture or extend its context length.
+- The quality of retrieved context information is dependent on the quality of stored embeddings and the efficiency of focus operators.
+
+Key Components:
+1. Embeddings Database: Stores context information as embeddings, enabling efficient retrieval of relevant data.
+2. Focus Operators: Configurable rules that guide the retrieval of context information based on input and other data.
+3. Focus Layers: Independent layers of focus operators that work with different sources and criteria to refine the context provided to the LLM.
+4. Action System: Integrates with the focus system to handle specific actions and tasks, enhancing the LLM's ability to respond to user requests.
+
+Remember to consider the scalability of the system, optimize performance, and maintain clear documentation for future contributors.
+
+Extended Focus System Overview:
+
+The focus system uses a recursive approach to intelligently expand and contract focus layers, providing more refined context management and reasoning capabilities for a large language model (LLM). By leveraging configurable focus operators and an external embeddings database (e.g., Milvus), the system enhances the LLM's performance, control over output, and context size handling.
+
+Flow:
+1. User input is received, and the system identifies relevant focus operators based on input and other data.
+2. The focus operators guide the retrieval of context information from the embeddings database.
+3. Recursive expansion and contraction of focus layers occur, allowing the system to dynamically adjust the level of detail provided to the LLM based on the input and focus operators.
+4. Retrieved context information is provided to the LLM, which generates a response based on the refined context.
+5. The system iteratively refines the context and LLM response until a satisfactory output is produced.
+
+Key Components:
+1. Recursive Focus Evaluator: A core component of the system that dynamically adjusts focus layers based on input, focus operators, and retrieved context information.
+2. Focus Operator Generator: A function that creates focus operators to guide context retrieval and reasoning.
+3. Web Scraper Integration: A subsystem that works in tandem with the focus operators and embeddings database to scrape the web for relevant information, enriching the ecosystem of focus operators, database content, and overall system performance.
+
+The extended focus system aims to improve the LLM's context management and reasoning capabilities by refining the context provided to the model, allowing users to simulate larger context windows, and offering greater control over the LLM's reasoning process.
+
 Here are some example templates provided within triple backticks:
 
 \```

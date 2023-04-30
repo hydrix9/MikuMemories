@@ -21,7 +21,21 @@ namespace MikuMemories
             public string SearchOperator { get; set; }
         }
 
-        double CalculateFocusOperatorWeight(FocusOperator op, List<Response> recentMessages, CharacterCard characterCard)
+        public static string GenerateFocus(string prompt) {
+            // Create an instance of the QueryExpander class
+
+            // Extract and expand keywords from the user input
+            List<string> keywords = QueryExpander.instance.ExtractKeywords(userInput);
+            List<string> expandedKeywords = QueryExpander.instance.ExpandQueryWithEmbeddings(keywords);
+
+            // Use the expandedKeywords to guide context selection and response generation
+
+
+            return "";
+        } 
+
+
+        static double CalculateFocusOperatorWeight(FocusOperator op, List<Response> recentMessages, CharacterCard characterCard)
         {
             // Calculate the weight of the focus operator based on its relevance to
             // recent messages, character attributes, and other criteria (realism, entertainment, etc.)

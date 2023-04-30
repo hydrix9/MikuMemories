@@ -57,8 +57,10 @@ namespace MikuMemories
             new Mongo(); //create instance
             new LlmApi(); //create instance
             new PythonInterop(); //create instance
+            new QueryExpander(); //create instance
+            new StopWords(); //create instance
 
-            string summary = await PythonInterop.GenerateSummary("test", 0.5);
+            string summary = await PythonInterop.instance.GenerateSummary("test", 0.5);
             Console.WriteLine(summary);
 
             string pythonPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Python");
@@ -300,7 +302,7 @@ namespace MikuMemories
                 ObjectId mongoId = new ObjectId();
                 response.Id = mongoId;
 
-                float[] embedding = PythonInterop.GenerateEmbedding(response.Text);
+                float[] embedding = PythonInterop.instance.GenerateEmbedding(response.Text);
                 long embeddingId = Milvus.instance.InsertEmbedding(Milvus.GetUserEmebddingsName(userName), mongoId, embedding);
                 response.EmbeddingId = embeddingId; //embedding ID used in Milvus
 
@@ -426,7 +428,7 @@ namespace MikuMemories
                         string latestMessagesFinal = latestMessages.ToString();
                         double ratio = Tools.CalculateSummaryRatio(length);
 
-                        string summaryText = await PythonInterop.GenerateSummary(latestMessagesFinal, ratio);
+                        string summaryText = await PythonInterop.instance.GenerateSummary(latestMessagesFinal, ratio);
 
                         var summary = new Summary { SummaryLength = length, Text = summaryText, Timestamp = DateTime.UtcNow };
                         await mongo.GetSummariesCollection(characterName).InsertOneAsync(summary);

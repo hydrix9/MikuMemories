@@ -51,6 +51,18 @@ namespace MikuMemories
             return ratio;
         }
 
+        public static List<string> ExtractKeywords(string userInput)
+        {
+            // Simple approach: split input by spaces and remove common stop words
+            string[] stopWords = { "a", "an", "the", "in", "on", "at", "and", "or" }; // Add more stop words as needed
+            List<string> keywords = userInput.Split(' ').Where(word => !stopWords.Contains(word)).ToList();
+
+            // Alternatively, use an NLP library like SpaCy via Python.NET for better keyword extraction
+
+            return keywords;
+        }
+
+
     } //end class tools
 
 }
