@@ -53,15 +53,18 @@ namespace MikuMemories
             Console.SetOut(dualWriter);
             Console.SetError(dualWriter);
 
+
             new Config(); //create instance
             new Mongo(); //create instance
             new LlmApi(); //create instance
             new PythonInterop(); //create instance
-            new QueryExpander(); //create instance
+            new QuerySystem(); //create instance
             new StopWords(); //create instance
 
+            /*
             string summary = await PythonInterop.instance.GenerateSummary("test", 0.5);
             Console.WriteLine(summary);
+            */
 
             string pythonPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Python");
             string pythonLibPath = Path.Combine(pythonPath, "Lib");
@@ -91,6 +94,7 @@ namespace MikuMemories
             };
 
             string characterCardFileName = null;
+            string focusOperatorPrompt = null;
 
             // Parse command line arguments
             for (int i = 0; i < args.Length; i++)
@@ -98,6 +102,12 @@ namespace MikuMemories
                 if (args[i] == "--character" && i + 1 < args.Length)
                 {
                     characterCardFileName = args[++i];
+                }
+                else if (args[i] == "--generate-operators" && i + 1 < args.Length)
+                {
+                    // Handle other flag and its argument
+                    focusOperatorPrompt = args[++i];
+                    // Process the argument as needed
                 }
                 else if (args[i] == "--some-other-flag" && i + 1 < args.Length)
                 {
@@ -150,24 +160,31 @@ namespace MikuMemories
             // Prompt the user to enter their name
             Console.WriteLine("Welcome to MikuMemories!");
 
-            Console.WriteLine("Enabling chat interface");
+            if(focusOperatorPrompt != null) {
+                new FocusOperatorGenerator(); //create instance
+                Task.Run(()=> FocusOperatorGenerator.GenerateOperatorsContinuously(focusOperatorPrompt));
+            }
+            else if(characterCardFileName != null) {
 
-            Chat(cts);
-
-            //run queue loop for LLM operations
-            var rdrtr_timer = new System.Timers.Timer(5); // Set the interval to 5ms
-            string startingContext = GenerateContext(characterCard, true);
-            rdrtr_timer.Elapsed += async (sender, e) => await ReadDatabaseResponsesTryRespond(startingContext);
-            rdrtr_timer.Start();
+                //run queue loop for LLM operations
+                var rdrtr_timer = new System.Timers.Timer(5); // Set the interval to 5ms
+                string startingContext = GenerateContext(characterCard, true);
+                rdrtr_timer.Elapsed += async (sender, e) => await ReadDatabaseResponsesTryRespond(startingContext);
+                rdrtr_timer.Start();
 
 
-            //run queue loop for LLM operations
-            var llmApi_timer = new System.Timers.Timer(5); // Set the interval to 5ms
-            llmApi_timer.Elapsed += async (sender, e) => await LlmApi.instance.TryProcessQueue();
-            llmApi_timer.Start();
-            
+                //run queue loop for LLM operations
+                var llmApi_timer = new System.Timers.Timer(5); // Set the interval to 5ms
+                llmApi_timer.Elapsed += async (sender, e) => await LlmApi.instance.TryProcessQueue();
+                llmApi_timer.Start();
+                
+                Chat(cts);
+                
+                //timer.Stop(); ///not sure where to put this...
 
-            //timer.Stop(); ///not sure where to put this...
+            }
+
+
 
         }
 
@@ -182,6 +199,7 @@ namespace MikuMemories
         }
 
         private static async void Chat(CancellationTokenSource cts) {
+            Console.WriteLine("Enabling chat interface");
 
             string userName = null;
             try
@@ -208,7 +226,7 @@ namespace MikuMemories
             var latestMessages = await Mongo.instance.GetLatestMessagesFromUserResponses(25);
             foreach (var message in latestMessages)
             {
-                Console.WriteLine($"{message.UserName}: {message.Text}");
+                Console.WriteLine($"{message.Author}: {message.Content}");
             }
 
 
@@ -302,7 +320,7 @@ namespace MikuMemories
                 ObjectId mongoId = new ObjectId();
                 response.Id = mongoId;
 
-                float[] embedding = PythonInterop.instance.GenerateEmbedding(response.Text);
+                float[] embedding = PythonInterop.instance.GenerateEmbedding(response.Content);
                 long embeddingId = Milvus.instance.InsertEmbedding(Milvus.GetUserEmebddingsName(userName), mongoId, embedding);
                 response.EmbeddingId = embeddingId; //embedding ID used in Milvus
 
@@ -338,7 +356,7 @@ namespace MikuMemories
 
             foreach (var response in recentResponses)
             {
-                contextBuilder.AppendLine($"{response.UserName}: {response.Text}");
+                contextBuilder.AppendLine($"{response.Author}: {response.Content}");
             }
 
             return contextBuilder.ToString();
@@ -422,7 +440,7 @@ namespace MikuMemories
                         StringBuilder latestMessages = new StringBuilder();
                         foreach (var response in latestMessagesRaw)
                         {
-                            latestMessages.AppendLine($"{response.UserName}: {response.Text}");
+                            latestMessages.AppendLine($"{response.Author}: {response.Content}");
                         }
 
                         string latestMessagesFinal = latestMessages.ToString();
@@ -487,7 +505,7 @@ namespace MikuMemories
                 }
 
                 
-                Response userResponse = new Response { UserName = userName, Text = input, Timestamp = System.DateTime.UtcNow };
+                Response userResponse = new Response { Author = userName, Content = input, Timestamp = System.DateTime.UtcNow };
 
                 try
                 {
@@ -548,7 +566,7 @@ namespace MikuMemories
 
                 Response latestResponse = await Mongo.GetLatestResponseFromAllAsync();
                 //if the response is from our character, nothing to do, waiting for others to respond
-                if(latestResponse != null  && latestResponse.UserName == characterName) {
+                if(latestResponse != null  && latestResponse.Author == characterName) {
                     return;
                 }
 
@@ -562,7 +580,7 @@ namespace MikuMemories
                         recentResponses = await compileRecentResponsesTask;
                         foreach (var response in recentResponses)
                         {
-                            recentResponsesText.AppendLine($"{response.UserName}: {response.Text}");
+                            recentResponsesText.AppendLine($"{response.Author}: {response.Content}");
                         }
 
 

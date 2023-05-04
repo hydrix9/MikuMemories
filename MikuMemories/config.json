@@ -23,8 +23,12 @@
     "sentence_transformer": "sentence-transformers/all-mpnet-base-v2",
 
     "query_expansion_topn": "3",
+    "query_recursive_maxDepth": "5",
+    "query_recursive_seconds": "5",
+    "response_temporal_decay": "0.0005",
 
 
+    "FocusOperatorGeneratorSearchDepth": 5,
 
 
     "query_expansion": "distilbert-base-uncased-finetuned-sst-2-english",

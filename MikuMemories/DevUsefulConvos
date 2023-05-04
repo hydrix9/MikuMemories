@@ -1,0 +1,11 @@
+As for the mathematical expression without using cosine similarity or similar methods, we can instead use a correlation coefficient, such as the Pearson correlation coefficient, to measure the linear relationship between the context and the target databases:
+
+Correlation_coefficient(Context, TargetDatabase)
+
+The expression for the effectiveness of the FocusOperator can then be calculated as follows:
+
+Effectiveness = Σ (Correlation_coefficient(Context, TargetDatabase) * weight(TargetDatabase))
+
+Where weight(TargetDatabase) is a user-defined weight for each target database, depending on its importance or relevance to the context.
+
+This expression calculates the effectiveness of the FocusOperator based on the relevance of the "ApplyTo" fields, guiding the AI system to prevent chain queries more effectively.

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -223,7 +224,22 @@ namespace MikuMemories
         //returns query expanded tokens
         public string[] ProcessQuery(string userInput)
         {
-            return query_processing.process_query(embedding_model, userInput, int.Parse(Config.GetValue("query_expansion_topn")));
+            return query_processing.process_query(embedding_model, nlp_model, userInput, int.Parse(Config.GetValue("query_expansion_topn")));
+        }
+
+
+        public dynamic GetNlpDoc(string query) {
+            return query_processing.create_nlp_doc(nlp_model, query);
+        }
+
+        public List<string> ExtractIntents(dynamic doc)
+        {
+            return query_processing.extract_intents(doc).As<List<string>>();
+        }
+
+        public List<Tuple<string, string>> ExtractEntities(dynamic doc)
+        {
+            return query_processing.extract_entities(doc).As<List<Tuple<string, string>>>();
         }
 
 

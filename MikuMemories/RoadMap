@@ -10,7 +10,7 @@ Project Repo: https://github.com/hydrix9/MikuMemories/
 
 Operating System: Arch Linux
 
-Programming Languages and Tools: C#, Visual Studio Code, Python.NET
+Programming Languages and Tools: C#, Visual Studio Code, Python.NET, Mongodb, Milvus
 
 Hardware Constraints:
 - GPU: RTX 4090 with 24GB vRAM (enough for a single 30B LLM model or several smaller ones)
@@ -64,27 +64,27 @@ Roadmap:
 2. Context-aware Query Expansion: Enhance user input for better context selection.
    - Develop techniques to expand user queries with relevant context.
    - Consider using pre-existing query expansion methods or developing a custom solution.
-   - Experiment with different expansion techniques to optimize results.
+   - (x) Experiment with different expansion techniques to optimize results.
 
 3. User Intent and Entity Recognition: Understand user inputs for targeted responses.
    - Implement a method to recognize user intents and entities in input messages.
-   - Train or fine-tune a model to identify intents and entities specific to the system.
-   - Use the recognized intents and entities to guide context selection and response generation.
+   - (x) Train or fine-tune a model to identify intents and entities specific to the system.
+   - (x) Use the recognized intents and entities to guide context selection and response generation.
 
 4. Conversational Clustering: Group messages based on semantic similarity to optimize context selection.
-   - Develop a method to cluster conversation segments based on their semantic content.
-   - Use the clustering information to guide context selection and maintain a focused conversation.
-   - Continuously update the clustering information as new conversation data is added.
+   - (x) Develop a method to cluster conversation segments based on their semantic content.
+   - (x) Use the clustering information to guide context selection and maintain a focused conversation.
+   - (x) Continuously update the clustering information as new conversation data is added.
 
 5. Dynamic Context Selection with Recency Bias: Keep context up-to-date and relevant.
    - Implement a context selection algorithm that prioritizes recent and relevant conversation segments.
-   - Experiment with different recency bias factors to optimize the balance between recency and relevance.
-   - Continuously update the context selection algorithm as new conversation data is added.
+   - (x) Experiment with different recency bias factors to optimize the balance between recency and relevance.
+   - (x) Continuously update the context selection algorithm as new conversation data is added.
 
 6. Topic Modeling: Detect underlying themes and prioritize context segments based on current topics.
-   - Implement a topic modeling technique to identify the main themes in the conversation.
-   - Use the identified topics to guide context selection and response generation.
-   - Regularly update the topic modeling information to ensure that it stays relevant to the ongoing conversation.
+   - (x) Implement a topic modeling technique to identify the main themes in the conversation.
+   - (x) Use the identified topics to guide context selection and response generation.
+   - (x) Regularly update the topic modeling information to ensure that it stays relevant to the ongoing conversation.
 
 7. Dynamic Focus Mechanism (Non-streaming): Analyze user input, select relevant context segments, and update context based on previous interactions before feeding the input to the LLM.
    - Design and implement the dynamic focus mechanism for the non-streaming setup.
@@ -199,10 +199,111 @@ Search for more recipes or a different topic, based on the user's request. Ensur
 {search_results}
 \```
 
+ ### Supplementary Information: Search Operators and Search Operator Writer
+
+ ### Goals for Search Operators:
+ - Guide the retrieval of context information from external databases.
+ - Provide generalized facts based on user input and context.
+ - Prevent chain queries, reducing the need for multiple LLM calls.
+ - Enhance the LLM's reasoning capabilities by providing refined context.
+
+ ### Example Search Operators:
+ 1. If a user has a cuisine preference, search chat history and food database for Italian food.
+ 2. If a user is a historical figure or Abraham Lincoln, search chat history and Wikipedia for their life events.
+
+ ### Goals for Search Operator Writer:
+ - Automatically generate new search operators based on indexed databases.
+ - Write search operators that help improve context management and conversation quality.
+ - Create search operators that can prevent chain queries by combing through information.
+
+ ### The Search Operator Writer works with the rest of the system by:
+ - Indexing and searching databases for relevant context information.
+ - Generating focus operators to guide the LLM in refining context and improving response quality.
+ - Interacting with other system components, such as the Recursive Focus Evaluator and Focus Operator Generator, to optimize context selection and response generation.
+
 When working with the templates, feel free to ask for clarification or more examples if needed. The templates may be adapted and extended based on the conversation context and requirements.
 
 
-Help me implement step [number] of this roadmap. Here's the current code:
+Help me implement step [number] of this roadmap. (x) means I skipped a step. Here's the current code:
 https://github.com/hydrix9/MikuMemories/
 Keep in mind my progress, diagnostics, and code snippets from our conversation, and adapt them as necessary.
+
+
+
+
+
+focus operator writer:
+get prompt (ex: "good roleplaying")
+ask what aspects are involved regarding prompt (ex: "characters, inventory, story, lore")
+expand each aspect ((maybe once or twice))- Ask what aspects of x are related to {prompt}
+nested loop, ask how each aspect interacts with the other
+take each item and expand them further
+   Take each "parent" concept as well as the "children" 
+   ask LLM for a list of the most common {item}
+   expand further? (ask for list of most common subitem)
+
+
+make class/struct that can hold
+   Characters > Personality > Traits
+each root level class will be a Focus layer
+   will each child level class be a Focus layer?
+figure out a way of ranking their importance to the main prompt ("good roleplaying")
+create the search operators by nested looping through all bottom final nodes
+rank the search operators using the method of ranking (asking the LLM, cosine similarity, other algorithms)
+done with the search operator writer
+
+
+implement hybrid system-- both answering questions through compiled search operators and maintaining the ability to search out new data using the action system (SearchOnline)
+
+ideal result:
+   if the character is a survivalist, it will link to every item that is in their inventory, perhaps prioritizing their weapon
+
+
+dataset downloader bot Roadmap:
+
+   Dataset Acquisition and Integration:
+      Identify relevant datasets based on user input, conversation context, and detected knowledge gaps.
+      Acquire and integrate the datasets into the system's existing database, ensuring data consistency and compatibility.
+      Continuously monitor and update the datasets as needed to maintain an up-to-date knowledge base.
+
+   Intelligent Dataset Selection:
+      Develop an algorithm to prioritize datasets based on their relevance to the current conversation and user interests.
+      Optimize dataset selection to improve context management and response generation, reducing the need for chain queries and external searches.
+
+   Dataset Analysis and Enrichment:
+      Analyze acquired datasets to identify patterns, trends, and knowledge gaps.
+      Develop a system to enrich existing datasets with additional information, such as user-generated content, web scraping, or collaborations with other AI systems.
+
+   Seamless Integration with Focus Operator Writer and Recursive Focus Evaluator:
+      Ensure the Dataset Downloader Bot works in harmony with the Focus Operator Writer and Recursive Focus Evaluator, providing enriched context and supporting the generation of search operators and focus layers.
+      Create a feedback loop between the Dataset Downloader Bot and the other systems, allowing the bot to adapt and improve its dataset acquisition and integration based on the performance of the focus operators and focus layers.
+
+   Performance Optimization and Scalability:
+      Optimize the performance of the Dataset Downloader Bot to handle increasing amounts of data and users as the project grows.
+      Design the bot with scalability in mind, allowing for easy integration of new datasets and expansion of existing datasets.
+
+
+improving search operator writer:
+
+    Improve the parsing of LLM responses:
+        Consider using a more advanced text parsing technique, such as regular expressions or natural language processing libraries, to extract relevant information from the LLM response. This will help ensure that the aspects and sub-aspects are accurately identified and used in the expansion process.
+
+    Ranking the importance of aspects and sub-aspects:
+        Implement a ranking system to prioritize the most relevant aspects and sub-aspects for the given prompt. You can use the LLM or other algorithms (e.g., cosine similarity, machine learning models) to determine the importance of each aspect in relation to the main prompt. This can help to focus the expansion process on the most important aspects and potentially reduce the depth of the search.
+
+    Enhance the expansion process:
+        Instead of simply expanding each aspect to a fixed depth, consider implementing a more dynamic approach where the depth of expansion depends on the importance of the aspect. This can help to explore the most important aspects in greater detail, while limiting the exploration of less relevant aspects.
+
+    Pruning the search tree:
+        Implement a pruning mechanism that removes less relevant or redundant nodes from the search tree. This can help to keep the focus on the most important aspects and reduce the complexity of the final search operators.
+
+    Generate search operators:
+        Once you have the final search tree, you can create search operators by iterating through the nodes and creating queries based on the information stored in each node. This can be done using a recursive method or a depth-first search algorithm.
+
+    Linking related concepts:
+        In order to achieve the ideal result of linking related concepts (e.g., a survivalist character's inventory), consider implementing a method that identifies relationships between aspects and sub-aspects, and stores this information in the search tree. This can help to create more meaningful search operators and facilitate connections between related concepts.
+
+
+future issue:
+   search operator dictionary could become "dirty" if it expands into deep territories. Example: "You feel uneasy." "Is he sick? I can get some medicine!" as a result of the search operators becoming medicinal after covering roleplaying in-depth
 

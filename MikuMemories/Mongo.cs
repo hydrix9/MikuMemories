@@ -193,15 +193,11 @@ namespace MikuMemories
 
     } //end class Mongo
 
-    public class Response
+    public class Response : SearchResult
     {
         [BsonId]
         [BsonElement("_id")]
         public ObjectId Id { get; set; }
-        public DateTime Timestamp { get; set; }
-        public string UserName { get; set; }
-        public string Text { get; set; }
-        public long EmbeddingId { get; set; }
         
     }
 

@@ -15,7 +15,8 @@ namespace MikuMemories
         //my custom "enum"
         public class Type {
             public static readonly string 
-                Response = "Request"
+                Response = "Request",
+                FocusWriter = "FocusWriter"
             ;
         }
 

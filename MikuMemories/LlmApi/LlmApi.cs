@@ -111,8 +111,8 @@ namespace MikuMemories
                         var res = new Response
                         {
                             Timestamp = DateTime.UtcNow,
-                            UserName = sender,
-                            Text = text
+                            Author = sender,
+                            Content = text
                         };
 
                         // Get or create the user-specific collection and insert the response
